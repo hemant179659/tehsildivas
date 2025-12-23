@@ -1,13 +1,20 @@
-import { Department, Project } from "../models/department.model.mjs";
+import { Department, Project, Complaint } from "../models/department.model.mjs";
 import bcrypt from "bcryptjs";
 import multer from "multer";
-import { S3Client, PutObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
+
 dotenv.config();
 
-// AWS S3
+/* =========================
+   AWS S3 CONFIG
+========================= */
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -16,20 +23,24 @@ const s3 = new S3Client({
   },
 });
 
-// Multer setup
+/* =========================
+   MULTER CONFIG
+========================= */
 const storage = multer.memoryStorage();
+
 export const photoUploadMiddleware = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (!["image/jpeg", "image/jpg"].includes(file.mimetype)) {
-      return cb(new Error("Only JPG images allowed"));
-    }
-    cb(null, true);
-  },
 }).array("photos", 5);
 
-// Nodemailer
+export const complaintDocumentUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).array("documents", 5);
+
+/* =========================
+   NODEMAILER
+========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -38,269 +49,186 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Helper
-function extractKeyFromUrl(url) {
-  try {
-    return url.split(".amazonaws.com/")[1];
-  } catch {
-    return null;
-  }
-}
-
-// ---------------------------
-// DEPARTMENT SIGNUP
-// ---------------------------
+/* =========================
+   AUTH
+========================= */
 export const departmentSignup = async (req, res) => {
-  console.log("Signup body:", req.body);
-  const { deptName, email, password } = req.body;
   try {
-    if (!deptName || !email || !password)
-      return res.status(400).json({ message: "All fields required" });
+    const { deptName, email, password } = req.body;
 
-    const existingDept = await Department.findOne({ $or: [{ deptName }, { email }] });
-    if (existingDept)
-      return res.status(400).json({ message: "Dept name or email already exists" });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newDept = new Department({ deptName, email, password: hashedPassword });
-
-    try {
-      const savedDept = await newDept.save();
-      console.log("Signup saved:", savedDept);
-      res.status(201).json({ message: "Signup successful" });
-    } catch (err) {
-      if (err.code === 11000) {
-        return res.status(400).json({ message: "Duplicate key error" });
-      }
-      throw err;
+    const exists = await Department.findOne({
+      $or: [{ deptName }, { email }],
+    });
+    if (exists) {
+      return res.status(400).json({ message: "Department already exists" });
     }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    await new Department({
+      deptName,
+      email,
+      password: hashed,
+    }).save();
+
+    res.status(201).json({ message: "Signup successful" });
   } catch (err) {
     console.error("Signup error:", err);
-    res.status(500).json({ message: "Server error during signup" });
+    res.status(500).json({ message: "Signup error" });
   }
 };
 
-// ---------------------------
-// DEPARTMENT LOGIN
-// ---------------------------
 export const departmentLogin = async (req, res) => {
-  const { email, password } = req.body;
   try {
-    if (!email || !password)
-      return res.status(400).json({ message: "Email & password are required" });
+    const { email, password } = req.body;
 
     const dept = await Department.findOne({ email });
-    if (!dept) return res.status(400).json({ message: "Account not found" });
+    if (!dept) {
+      return res.status(400).json({ message: "Department not found" });
+    }
 
-    const isMatch = await bcrypt.compare(password, dept.password);
-    if (!isMatch) return res.status(400).json({ message: "Incorrect password" });
+    const match = await bcrypt.compare(password, dept.password);
+    if (!match) {
+      return res.status(400).json({ message: "Wrong password" });
+    }
 
-    res.status(200).json({ message: "Login successful", deptName: dept.deptName });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error during login" });
+    res.json({ deptName: dept.deptName });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Login error" });
   }
 };
 
-// ---------------------------
-// FORGOT PASSWORD
-// ---------------------------
+/* =========================
+   PASSWORD RESET
+========================= */
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
   try {
+    const { email } = req.body;
+
     const dept = await Department.findOne({ email });
-    if (!dept) return res.status(404).json({ message: "Email not found" });
+    if (!dept) {
+      return res.status(404).json({ message: "Email not found" });
+    }
 
     const token = crypto.randomBytes(20).toString("hex");
-    const hashedToken = await bcrypt.hash(token, 10);
-    const expiry = Date.now() + 15 * 60 * 1000;
 
-    dept.resetToken = hashedToken;
-    dept.resetTokenExpiry = expiry;
+    dept.resetToken = await bcrypt.hash(token, 10);
+    dept.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
     await dept.save();
 
-    const resetLink = `https://www.usn.digital/dept-reset-password?token=${token}&email=${email}`;
+    const link = `http://localhost:5173/dept-reset-password?token=${token}&email=${email}`;
 
     await transporter.sendMail({
-      from: `"Project Monitoring" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Password Reset Request",
-      html: `<p>Click below to reset your password (valid for 15 minutes):</p>
-             <a href="${resetLink}">${resetLink}</a>`,
+      subject: "Password Reset",
+      html: `<a href="${link}">${link}</a>`,
     });
 
-    res.json({ message: "Password reset link sent" });
-  } catch (error) {
-    console.error("Forgot password error:", error);
-    res.status(500).json({ message: "Server error during password reset" });
+    res.json({ message: "Reset link sent" });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ message: "Reset error" });
   }
 };
 
-// ---------------------------
-// RESET PASSWORD
-// ---------------------------
 export const resetPassword = async (req, res) => {
-  const { email, token, newPassword } = req.body;
   try {
+    const { email, token, newPassword } = req.body;
+
     const dept = await Department.findOne({ email });
-    if (!dept) return res.status(404).json({ message: "Invalid request" });
+    if (!dept) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
 
-    if (!dept.resetToken || !dept.resetTokenExpiry)
-      return res.status(400).json({ message: "No reset request found" });
+    const valid = await bcrypt.compare(token, dept.resetToken);
+    if (!valid) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
 
-    if (Date.now() > dept.resetTokenExpiry)
-      return res.status(400).json({ message: "Token expired" });
-
-    const isValid = await bcrypt.compare(token, dept.resetToken);
-    if (!isValid) return res.status(400).json({ message: "Invalid token" });
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    dept.password = hashedPassword;
+    dept.password = await bcrypt.hash(newPassword, 10);
     dept.resetToken = undefined;
     dept.resetTokenExpiry = undefined;
     await dept.save();
 
     res.json({ message: "Password updated successfully" });
-  } catch (error) {
-    console.error("Reset password error:", error);
-    res.status(500).json({ message: "Server error during password reset" });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ message: "Reset failed" });
   }
 };
 
-// ---------------------------
-// ADD PROJECT
-// ---------------------------
+/* =========================
+   PROJECTS
+========================= */
 export const addProject = async (req, res) => {
-  const {
-    name,
-    progress,
-    startDate,
-    endDate,
-    department,
-    budgetAllocated,
-    remarks,
-    contactPerson,
-    designation,
-    contactNumber,
-  } = req.body;
-
   try {
-    const progressValue = Number(progress);
-    const budgetValue = Number(budgetAllocated);
-
-    if (
-      !name ||
-      !startDate ||
-      !endDate ||
-      !department ||
-      isNaN(progressValue) ||
-      progressValue < 0 ||
-      progressValue > 100 ||
-      isNaN(budgetValue) ||
-      budgetValue <= 0 ||
-      !contactPerson ||
-      !designation ||
-      !contactNumber
-    ) {
-      return res.status(400).json({
-        message:
-          "All fields required. Progress 0–100, budget > 0, and contact details required.",
-      });
-    }
-
-    const newProject = new Project({
-      name,
-      progress: progressValue,
-      startDate,
-      endDate,
-      department,
-      budgetAllocated: budgetValue,
-      remainingBudget: budgetValue,
-      remarks: remarks || "",
+    const project = new Project({
+      ...req.body,
+      remainingBudget: req.body.budgetAllocated,
       photos: [],
-      contactPerson,
-      designation,
-      contactNumber,
     });
 
-    await newProject.save();
-    res.status(201).json({ message: "Project added successfully", project: newProject });
-  } catch (error) {
-    console.error("Add project error:", error);
-    res.status(500).json({ message: "Server error while adding project" });
+    await project.save();
+    res.status(201).json(project);
+  } catch (err) {
+    console.error("Add project error:", err);
+    res.status(500).json({ message: "Add project error" });
   }
 };
 
-// ---------------------------
-// GET PROJECTS
-// ---------------------------
 export const getProjects = async (req, res) => {
-  const { department, all } = req.query;
   try {
-    let projects;
-    if (all === "true") {
-      projects = await Project.find({}).lean();
-    } else {
-      if (!department) return res.status(400).json({ message: "Department is required" });
-      projects = await Project.find({ department }).lean();
+    const projects =
+      req.query.all === "true"
+        ? await Project.find()
+        : await Project.find({ department: req.query.department });
+
+    res.json({ projects });
+  } catch (err) {
+    console.error("Fetch projects error:", err);
+    res.status(500).json({ message: "Fetch projects error" });
+  }
+};
+
+export const updateProject = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
     }
 
-    const projectsWithUrls = projects.map((p) => {
-      const photosWithUrl = (p.photos || []).map((photo) => ({
-        url:
-          photo.url ||
-          (photo.key
-            ? `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${photo.key}`
-            : ""),
-        uploadedAt: photo.uploadedAt,
-      }));
-      return { ...p, photos: photosWithUrl };
-    });
+    Object.assign(project, req.body);
+    await project.save();
 
-    res.status(200).json({ projects: projectsWithUrls });
-  } catch (error) {
-    console.error("Get projects error:", error);
-    res.status(500).json({ message: "Server error while fetching projects" });
+    res.json(project);
+  } catch (err) {
+    console.error("Update project error:", err);
+    res.status(500).json({ message: "Update project error" });
   }
 };
 
-// ---------------------------
-// UPDATE PROJECT
-// ---------------------------
-export const updateProject = async (req, res) => {
-  const { id } = req.params;
+export const deleteProject = async (req, res) => {
   try {
-    const project = await Project.findById(id);
-    if (!project) return res.status(404).json({ message: "Project not found" });
+    await Project.findByIdAndDelete(req.params.id);
+    res.json({ message: "Project deleted" });
+  } catch (err) {
+    console.error("Delete project error:", err);
+    res.status(500).json({ message: "Delete project error" });
+  }
+};
 
-    const { progress, remarks, remainingBudget } = req.body;
+/* =========================
+   COMPLAINTS (OPERATOR)
+========================= */
+export const registerComplaint = async (req, res) => {
+  try {
+    const uploadedDocuments = [];
 
     if (req.files && req.files.length > 0) {
-      if (Array.isArray(project.photos) && project.photos.length > 0) {
-        const objectsToDelete = project.photos
-          .map((p) => {
-            const key = p.key ? p.key : extractKeyFromUrl(p.url);
-            return key ? { Key: key } : null;
-          })
-          .filter(Boolean);
-
-        if (objectsToDelete.length > 0) {
-          try {
-            await s3.send(
-              new DeleteObjectsCommand({
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Delete: { Objects: objectsToDelete },
-              })
-            );
-          } catch (err) {
-            console.log("S3 delete error:", err);
-          }
-        }
-      }
-
-      const uploadedPhotos = [];
       for (const file of req.files) {
-        const key = `projects/${Date.now()}-${file.originalname}`;
+        const key = `complaints/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
+
         await s3.send(
           new PutObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME,
@@ -310,58 +238,100 @@ export const updateProject = async (req, res) => {
           })
         );
 
-        uploadedPhotos.push({
+        uploadedDocuments.push({
           key,
           url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
-          uploadedAt: new Date(),
         });
       }
-      project.photos = uploadedPhotos;
     }
 
-    if (progress !== undefined) project.progress = Number(progress);
-    if (remarks !== undefined) project.remarks = remarks;
-    if (remainingBudget !== undefined) project.remainingBudget = Number(remainingBudget);
+    const complaint = new Complaint({
+      ...req.body,
+      documents: uploadedDocuments,
+    });
 
-    await project.save();
-    res.status(200).json({ message: "Project updated successfully", project });
-  } catch (error) {
-    console.error("Update project error:", error);
-    res.status(500).json({ message: "Server error while updating project" });
+    await complaint.save();
+
+    res.status(201).json({ complaintId: complaint.complaintId });
+  } catch (err) {
+    console.error("Register complaint error:", err);
+    res.status(500).json({ message: "Complaint register error" });
   }
 };
 
-// ---------------------------
-// DELETE PROJECT
-// ---------------------------
-export const deleteProject = async (req, res) => {
+export const getComplaintsByTehsil = async (req, res) => {
   try {
-    const projectId = req.params.id;
-    const project = await Project.findById(projectId);
-    if (!project) return res.status(404).json({ message: "Project not found" });
+    const complaints = await Complaint.find({
+      assignedPlace: req.query.tehsil,
+    }).sort({ createdAt: -1 });
 
-    if (Array.isArray(project.photos) && project.photos.length > 0) {
-      const objectsToDelete = project.photos
-        .map((p) => {
-          const key = p.key ? p.key : extractKeyFromUrl(p.url);
-          return key ? { Key: key } : null;
-        })
-        .filter(Boolean);
+    res.json({ complaints });
+  } catch (err) {
+    console.error("Fetch complaints by tehsil error:", err);
+    res.status(500).json({ message: "Fetch complaints error" });
+  }
+};
 
-      if (objectsToDelete.length > 0) {
-        await s3.send(
-          new DeleteObjectsCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Delete: { Objects: objectsToDelete },
-          })
-        );
-      }
+/* =========================
+   COMPLAINTS (DEPARTMENT)
+========================= */
+export const getComplaintsByDepartment = async (req, res) => {
+  try {
+    const complaints = await Complaint.find({
+      department: req.query.department,
+    }).sort({ createdAt: -1 });
+
+    res.json({ complaints });
+  } catch (err) {
+    console.error("Fetch department complaints error:", err);
+    res.status(500).json({ message: "Fetch department complaints error" });
+  }
+};
+
+export const updateComplaintStatus = async (req, res) => {
+  try {
+    const { complaintId } = req.params;
+    const { status, remark, department } = req.body;
+
+    if (!status || !remark || !department) {
+      return res.status(400).json({
+        message: "Status, remark और department आवश्यक है",
+      });
     }
 
-    await Project.findByIdAndDelete(projectId);
-    res.status(200).json({ message: "Project and its photos deleted successfully" });
-  } catch (error) {
-    console.error("Delete project error:", error);
-    res.status(500).json({ message: "Server error while deleting project" });
+    const complaint = await Complaint.findOne({ complaintId });
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    /* ===== DELETE DOCUMENTS FROM S3 ON RESOLVE ===== */
+    if (status === "निस्तारित" && complaint.documents.length > 0) {
+      for (const doc of complaint.documents) {
+        if (doc.key) {
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.AWS_BUCKET_NAME,
+              Key: doc.key,
+            })
+          );
+        }
+      }
+      complaint.documents = [];
+    }
+
+    complaint.status = status;
+    complaint.remarksHistory.push({
+      department,
+      status,
+      remark,
+      actionDate: new Date(),
+    });
+
+    await complaint.save();
+
+    res.json({ message: "Status updated successfully" });
+  } catch (err) {
+    console.error("Update complaint status error:", err);
+    res.status(500).json({ message: "Update status error" });
   }
 };

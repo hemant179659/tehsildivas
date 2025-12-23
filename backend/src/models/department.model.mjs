@@ -1,16 +1,37 @@
 import mongoose from "mongoose";
 
-// Department Schema
-const departmentSchema = new mongoose.Schema({
-  deptName: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  resetToken: { type: String },
-  resetTokenExpiry: { type: Date }
-});
+/* =========================
+   DEPARTMENT SCHEMA
+========================= */
+const departmentSchema = new mongoose.Schema(
+  {
+    deptName: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    resetToken: String,
+    resetTokenExpiry: Date,
+  },
+  { timestamps: true }
+);
+
 const Department = mongoose.model("Department", departmentSchema);
 
-// Project Schema
+/* =========================
+   PROJECT SCHEMA
+========================= */
 const projectSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -24,13 +45,89 @@ const projectSchema = new mongoose.Schema(
     designation: { type: String, required: true },
     contactNumber: { type: String, required: true },
     remarks: { type: String, default: "" },
+
     photos: [
-      { url: String, key: String, uploadedAt: { type: Date, default: Date.now } }
+      {
+        url: String,
+        key: String,
+        uploadedAt: { type: Date, default: Date.now },
+      },
     ],
-    geoLocation: { lat: { type: Number }, lng: { type: Number } }
+
+    geoLocation: {
+      lat: Number,
+      lng: Number,
+    },
   },
   { timestamps: true }
 );
+
 const Project = mongoose.model("Project", projectSchema);
 
-export { Department, Project };
+/* =========================
+   COMPLAINT SCHEMA (FINAL)
+========================= */
+const complaintSchema = new mongoose.Schema(
+  {
+    complaintId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+
+    complainantName: { type: String, required: true },
+    guardianName: { type: String, required: true },
+    address: { type: String, required: true },
+
+    mobile: {
+      type: String,
+      required: true,
+      match: /^[0-9]{10}$/,
+    },
+
+    complaintDetails: { type: String, required: true },
+
+    documents: [
+      {
+        url: String,
+        key: String,
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    assignedBy: { type: String, required: true },
+    assignedPlace: { type: String, required: true },
+    assignedDate: { type: Date, required: true },
+    department: { type: String, required: true },
+
+    /* ===== CURRENT STATUS ===== */
+    status: {
+      type: String,
+      enum: ["लंबित", "प्रक्रिया में", "निस्तारित"],
+      default: "लंबित",
+    },
+
+    /* ===== REMARKS HISTORY ===== */
+    remarksHistory: [
+      {
+        department: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ["प्रक्रिया में", "निस्तारित"],
+          required: true,
+        },
+        remark: { type: String, required: true },
+        actionDate: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+const Complaint = mongoose.model("Complaint", complaintSchema);
+
+export { Department, Project, Complaint };
