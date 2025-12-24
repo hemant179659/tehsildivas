@@ -31,7 +31,7 @@ export default function AdminPending() {
   useEffect(() => {
     axios
       .get(
-        "http://localhost:8000/api/department/department-complaints?all=true"
+        "/api/department/department-complaints?all=true"
       )
       .then((res) => {
         const pending = (res.data.complaints || []).filter(

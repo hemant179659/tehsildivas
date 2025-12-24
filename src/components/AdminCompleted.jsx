@@ -31,7 +31,7 @@ export default function AdminCompleted() {
   useEffect(() => {
     axios
       .get(
-        "http://localhost:8000/api/department/department-complaints?all=true"
+        "/api/department/department-complaints?all=true"
       )
       .then((res) => {
         const completed = (res.data.complaints || []).filter(

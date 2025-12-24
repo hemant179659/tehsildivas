@@ -41,7 +41,7 @@ export default function DepartmentAction() {
     const fetchComplaints = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8000/api/department/department-complaints?department=${loggedDepartment}`
+          `/api/department/department-complaints?department=${loggedDepartment}`
         );
 
         const active = (res.data.complaints || []).filter(
@@ -78,7 +78,7 @@ export default function DepartmentAction() {
       setActionLoading(true);
 
       await axios.put(
-        `http://localhost:8000/api/department/update-status/${complaintId}`,
+        `/api/department/update-status/${complaintId}`,
         { status, remark, department: loggedDepartment }
       );
 

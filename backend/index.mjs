@@ -24,6 +24,8 @@ app.use(
     origin: [
       "https://usn.digital",
       "https://www.usn.digital",
+      "https://www.tehsildivas.usn.digital",
+      "https://tehsildivas.usn.digital",
       "http://localhost:5173",
     ],
     credentials: true,

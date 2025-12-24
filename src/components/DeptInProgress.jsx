@@ -21,7 +21,7 @@ export default function DeptInProgress() {
   useEffect(() => {
     axios
       .get(
-        `http://localhost:8000/api/department/department-complaints?department=${department}`
+        `/api/department/department-complaints?department=${department}`
       )
       .then((res) => {
         setComplaints(

@@ -27,7 +27,7 @@ export default function AdminInProgress() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/api/department/department-complaints?all=true")
+      .get("/api/department/department-complaints?all=true")
       .then((res) => {
         const inProgress = (res.data.complaints || []).filter(
           (c) => c.status === "प्रक्रिया में"

@@ -26,7 +26,7 @@ export default function DeptOverall() {
   useEffect(() => {
     axios
       .get(
-        `http://localhost:8000/api/department/department-complaints?department=${department}`
+        `/api/department/department-complaints?department=${department}`
       )
       .then((res) => {
         const all = res.data.complaints || [];

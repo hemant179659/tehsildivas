@@ -30,7 +30,7 @@ export default function AdminOverall() {
   useEffect(() => {
     axios
       .get(
-        "http://localhost:8000/api/department/department-complaints?all=true"
+        "/api/department/department-complaints?all=true"
       )
       .then((res) => {
         const complaints = res.data.complaints || [];

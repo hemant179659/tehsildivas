@@ -38,7 +38,7 @@ export default function DepartmentLogin() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8000/api/department/login",
+        "/api/department/login",
         { email, password }
       );
 

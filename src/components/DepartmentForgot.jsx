@@ -28,7 +28,7 @@ export default function DepartmentForgot() {
 
     setLoading(true);
     try {
-      await axios.post("http://localhost:8000/api/department/forgot-password", {
+      await axios.post("/api/department/forgot-password", {
         email,
       });
 

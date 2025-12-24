@@ -19,7 +19,7 @@ export default function ComplaintStatus() {
       setComplaint(null);
 
       const res = await axios.get(
-        `http://localhost:8000/api/department/complaint-status/${complaintId}`
+        `/api/department/complaint-status/${complaintId}`
       );
 
       setComplaint(res.data.complaint);

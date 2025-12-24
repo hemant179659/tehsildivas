@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import styles from "../styles/styles.module.css";
 import BackButton from "./BackButton";
 import backgroundImage from "../assets/login.jpg";
+
+// Toastify
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -11,109 +14,80 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+  /* ================= RESIZE ================= */
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  /* ================= AUTO REDIRECT ================= */
+  useEffect(() => {
+    const isAdmin = localStorage.getItem("isAdmin");
+    if (isAdmin) {
+      navigate("/admin-dashboard", { replace: true });
+    }
+  }, [navigate]);
+
+  /* ================= LOGIN ================= */
   const handleLogin = () => {
     if (!email || !password) {
-      alert("Please fill email and password");
-      return;
+      return toast.error("Please enter email and password");
     }
 
     if (email === "diousn@nic.in" && password === "diousn@123") {
       localStorage.setItem("isAdmin", "true");
-      navigate("/admin-dashboard");
+      toast.success("Admin login successful");
+
+      setTimeout(() => {
+        navigate("/admin-dashboard", { replace: true });
+      }, 1200);
     } else {
-      alert("Invalid email or password");
+      toast.error("Invalid email or password");
     }
   };
 
   return (
-    <div
-      style={{
-        position: "relative",
-        minHeight: "100vh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        overflowX: "hidden",
-        paddingBottom: "80px", // footer space
-      }}
-    >
-      <div
-        className={styles.loginPage}
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-        }}
-      >
-        {/* LEFT SECTION */}
-        <div
-          className={styles.leftSection}
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: isMobile ? "cover" : "115%",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center 20%",
-            backgroundColor: "#ffffff",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-start",
-            paddingTop: "20px",
-            height: isMobile ? "250px" : "calc(100vh - 50px)",
-            borderRight: isMobile ? "none" : "1px solid #eee",
-          }}
-        >
-          <BackButton onClick={() => navigate("/")} />
+    <div style={pageWrapper}>
+      <ToastContainer autoClose={2000} position="top-right" />
+
+      {/* LEFT IMAGE (DESKTOP ONLY) */}
+      {!isMobile && (
+        <div style={leftSection}>
+          <div style={leftImage} />
+          <div style={overlay} />
+          <BackButton onClick={() => navigate("/", { replace: true })} />
         </div>
+      )}
 
-        {/* RIGHT SECTION */}
-        <div
-          className={styles.rightSection}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingBottom: isMobile ? "40px" : "0",
-            height: isMobile ? "auto" : "calc(100vh - 50px)",
-            paddingTop: isMobile ? "40px" : "0",
-          }}
-        >
-          <div
-            className={styles.loginBox}
-            style={isMobile ? { width: "85%", maxWidth: "400px" } : {}}
-          >
-            <h2 className={styles.loginTitle}>Admin Login</h2>
+      {/* RIGHT FORM */}
+      <div style={rightSection}>
+        <div style={loginBox}>
+          <h2 style={title}>Admin Login</h2>
 
-            <input
-              className={styles.inputField}
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <input
+            style={input}
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-            <input
-              className={styles.inputField}
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          <input
+            style={input}
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-            <button className={styles.loginBtn} onClick={handleLogin}>
-              Login
-            </button>
-          </div>
+          <button style={loginBtn} onClick={handleLogin}>
+            Login
+          </button>
         </div>
       </div>
 
-      {/* ===== SAME FIXED FOOTER (AS OTHER PAGES) ===== */}
+      {/* FOOTER */}
       <footer style={footerStyle}>
         <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
         <p style={{ margin: 0, fontSize: "0.75rem" }}>
@@ -124,7 +98,83 @@ export default function AdminLogin() {
   );
 }
 
-/* ================= FOOTER STYLE ================= */
+/* ================= STYLES ================= */
+
+const pageWrapper = {
+  minHeight: "100vh",
+  display: "flex",
+  flexDirection: "row",
+  position: "relative",
+  backgroundColor: "#f4f6f9",
+};
+
+const leftSection = {
+  flex: 1,
+  position: "relative",
+  overflow: "hidden",
+};
+
+const leftImage = {
+  position: "absolute",
+  inset: 0,
+  backgroundImage: `url(${backgroundImage})`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  zIndex: 1,
+};
+
+const overlay = {
+  position: "absolute",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.35)", // only background faded
+  zIndex: 2,
+};
+
+const rightSection = {
+  flex: 1,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 20,
+  backgroundColor: "#ffffff",
+  zIndex: 3,
+};
+
+const loginBox = {
+  width: "100%",
+  maxWidth: 380,
+  background: "#fff",
+  padding: 30,
+  borderRadius: 10,
+  boxShadow: "0 6px 18px rgba(0,0,0,0.2)",
+};
+
+const title = {
+  textAlign: "center",
+  marginBottom: 22,
+  fontWeight: 900,
+  color: "#000",
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  marginBottom: 14,
+  borderRadius: 6,
+  border: "2px solid #000",
+  fontWeight: 600,
+};
+
+const loginBtn = {
+  width: "100%",
+  padding: 12,
+  backgroundColor: "#0056b3",
+  color: "#fff",
+  border: "none",
+  borderRadius: 6,
+  fontWeight: 700,
+  cursor: "pointer",
+};
 
 const footerStyle = {
   position: "fixed",
@@ -135,5 +185,5 @@ const footerStyle = {
   padding: "10px",
   borderTop: "4px solid #0056b3",
   color: "#000",
-  zIndex: 999,
+  zIndex: 5,
 };

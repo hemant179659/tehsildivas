@@ -101,7 +101,7 @@ export default function ComplaintRegister() {
     try {
       setLoading(true);
       await axios.post(
-        "http://localhost:8000/api/department/register",
+        "/api/department/register",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

@@ -56,7 +56,7 @@ export default function AdminProjectDashboard() {
     const fetchAll = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:8000/api/department/department-complaints?all=true"
+          "/api/department/department-complaints?all=true"
         );
 
         const complaints = res.data.complaints || [];

@@ -20,7 +20,7 @@ export default function DeptResolved() {
   useEffect(() => {
     axios
       .get(
-        `http://localhost:8000/api/department/department-complaints?department=${department}`
+        `/api/department/department-complaints?department=${department}`
       )
       .then((res) => {
         const resolved = (res.data.complaints || []).filter(

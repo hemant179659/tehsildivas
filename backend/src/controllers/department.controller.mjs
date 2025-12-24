@@ -117,7 +117,7 @@ export const forgotPassword = async (req, res) => {
     dept.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
     await dept.save();
 
-    const link = `http://localhost:5173/dept-reset-password?token=${token}&email=${email}`;
+    const link = `https://tehsildivas.usn.digital/dept-reset-password?token=${token}&email=${email}`;
 
     await transporter.sendMail({
       to: email,

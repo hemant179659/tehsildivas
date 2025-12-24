@@ -64,7 +64,7 @@ export default function DepartmentSignup() {
     }
 
     try {
-      await axios.post("http://localhost:8000/api/department/signup", {
+      await axios.post("/api/department/signup", {
         deptName,
         email,
         password,

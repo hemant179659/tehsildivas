@@ -33,7 +33,7 @@ export default function RegisteredComplaints() {
     const fetchComplaints = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8000/api/department/complaints?tehsil=${loggedTehsil}`
+          `/api/department/complaints?tehsil=${loggedTehsil}`
         );
         setComplaints(res.data.complaints || []);
       } catch {
