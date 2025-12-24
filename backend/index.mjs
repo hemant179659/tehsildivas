@@ -5,9 +5,23 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// ROUTES
 import departmentRoutes from "./src/routes/department.routes.mjs";
 
+/* =========================
+   LOAD ENV (MUST BE FIRST)
+========================= */
 dotenv.config();
+
+/* =========================
+   BASIC CHECKS (DEBUG)
+========================= */
+console.log("ENV PORT =", process.env.PORT);
+console.log("ENV MONGO_URI =", process.env.MONGO_URI ? "OK" : "MISSING");
+
+/* =========================
+   EXPRESS INIT
+========================= */
 const app = express();
 
 /* =========================
@@ -24,8 +38,8 @@ app.use(
     origin: [
       "https://usn.digital",
       "https://www.usn.digital",
-      "https://www.tehsildivas.usn.digital",
       "https://tehsildivas.usn.digital",
+      "https://www.tehsildivas.usn.digital",
       "http://localhost:5173",
     ],
     credentials: true,
@@ -39,13 +53,9 @@ app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
 /* =========================
-   STATIC FILES (Complaint Docs)
-   PDF / JPG / JPEG
+   STATIC FILES
 ========================= */
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* =========================
    ROUTES
@@ -53,27 +63,29 @@ app.use(
 app.use("/api/department", departmentRoutes);
 
 /* =========================
-   HEALTH CHECK (OPTIONAL)
+   HEALTH CHECK
 ========================= */
-app.get("/", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    message: "Complaint & Project API running successfully",
-  });
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK", service: "tehsildivas-backend" });
 });
 
 /* =========================
-   DATABASE CONNECTION
+   DATABASE
 ========================= */
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection failed");
+    console.error(err);
+    process.exit(1); // stop server if DB fails
+  });
 
 /* =========================
-   SERVER START
+   SERVER START (IMPORTANT)
 ========================= */
-const PORT = process.env.PORT || 8000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+const PORT = Number(process.env.PORT) || 9000;
+
+app.listen(PORT, "127.0.0.1", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
