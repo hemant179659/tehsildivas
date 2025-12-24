@@ -8,34 +8,41 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 import {
   FaTachometerAlt,
-  FaList,
   FaSignOutAlt,
   FaUserCircle,
-  FaChartBar,
-  FaImages,
 } from "react-icons/fa";
-import styles from "../styles/dashboard.module.css";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function AdminDashboard() {
+export default function AdminProjectDashboard() {
   const navigate = useNavigate();
 
-  const [projects, setProjects] = useState([]);
-  const [deptStats, setDeptStats] = useState([]);
-  const [animatedCounts, setAnimatedCounts] = useState({
+  const [deptData, setDeptData] = useState([]);
+  const [stats, setStats] = useState({
     total: 0,
-    completed: 0,
     pending: 0,
+    progress: 0,
+    resolved: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  const adminName = "Admin";
+  /* ================= RESIZE ================= */
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
 
-  // Admin Auth check
+  /* ================= ADMIN AUTH ================= */
   useEffect(() => {
     const isAdmin = localStorage.getItem("isAdmin");
     if (!isAdmin) {
@@ -44,59 +51,52 @@ export default function AdminDashboard() {
     }
   }, [navigate]);
 
-  // Fetch all projects
+  /* ================= FETCH DATA ================= */
   useEffect(() => {
-    const fetchAllProjects = async () => {
-      setLoading(true);
+    const fetchAll = async () => {
       try {
-        const res = await axios.get("/api/department/projects?all=true");
+        const res = await axios.get(
+          "http://localhost:8000/api/department/department-complaints?all=true"
+        );
 
-        if (res.data?.projects) {
-          const allProjects = res.data.projects;
-          setProjects(allProjects);
+        const complaints = res.data.complaints || [];
 
-          const total = allProjects.length;
-          const completed = allProjects.filter((p) => p.progress === 100).length;
-          const pending = total - completed;
+        const total = complaints.length;
+        const pending = complaints.filter(c => c.status === "लंबित").length;
+        const progress = complaints.filter(c => c.status === "प्रक्रिया में").length;
+        const resolved = complaints.filter(c => c.status === "निस्तारित").length;
 
-          // Animate counters
-          let count = 0;
-          const interval = setInterval(() => {
-            setAnimatedCounts({
-              total: Math.min(count, total),
-              completed: Math.min(count, completed),
-              pending: Math.min(count, pending),
-            });
-            count++;
-            if (count > Math.max(total, completed, pending)) clearInterval(interval);
-          }, 50);
+        setStats({ total, pending, progress, resolved });
 
-          // Department stats
-          const depts = {};
-          allProjects.forEach((p) => {
-            if (!depts[p.department]) depts[p.department] = { completed: 0, pending: 0 };
-            if (p.progress === 100) depts[p.department].completed += 1;
-            else depts[p.department].pending += 1;
-          });
+        const deptMap = {};
+        complaints.forEach(c => {
+          if (!deptMap[c.department]) {
+            deptMap[c.department] = {
+              department: c.department,
+              लंबित: 0,
+              प्रक्रिया_में: 0,
+              निस्तारित: 0,
+              कुल: 0,
+            };
+          }
+          deptMap[c.department].कुल++;
+          if (c.status === "लंबित") deptMap[c.department].लंबित++;
+          if (c.status === "प्रक्रिया में") deptMap[c.department].प्रक्रिया_में++;
+          if (c.status === "निस्तारित") deptMap[c.department].निस्तारित++;
+        });
 
-          const statsArray = Object.keys(depts).map((d) => ({
-            department: d,
-            ...depts[d],
-          }));
-
-          setDeptStats(statsArray);
-        }
-      } catch (err) {
-        console.error("Failed to fetch projects", err);
+        setDeptData(Object.values(deptMap));
+      } catch {
+        toast.error("डेटा लोड नहीं हो सका");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllProjects();
+    fetchAll();
   }, []);
 
-  const COLORS = ["#4CAF50", "#FF9800", "#2196F3", "#FF5722", "#9C27B0", "#FFC107"];
+  const COLORS = ["#dc3545", "#ffc107", "#198754", "#0d6efd", "#6f42c1"];
 
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
@@ -104,154 +104,185 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className={styles.container} style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar - Fixed Height */}
-      <aside className={styles.sidebar}>
-        <div className={styles.profile}>
-          <FaUserCircle size={48} color="#fff" />
-          <h3>{adminName}</h3>
-        </div>
+    <>
+      <ToastContainer autoClose={2000} />
 
-        <ul className={styles.menu}>
-          <li onClick={() => navigate("/admin-dashboard")}><FaTachometerAlt /> Dashboard</li>
-          <li onClick={() => navigate("/admin-project-list")}><FaList /> Project List</li>
-          <li onClick={() => navigate("/department-status")}><FaChartBar /> Department Status</li>
-          <li onClick={() => navigate("/projectrecentphotoadmin")}><FaImages /> Project Recent Photos</li>
-          <li onClick={handleLogout}><FaSignOutAlt /> Logout</li>
-        </ul>
-      </aside>
+      <div
+        style={{
+          display: "flex",
+          minHeight: "100vh",
+          flexDirection: isMobile ? "column" : "row",
+          paddingBottom: "80px",
+          background: "#fff",
+          color: "#000",
+        }}
+      >
+        {/* ================= SIDEBAR ================= */}
+        <aside style={{ ...sidebar, width: isMobile ? "100%" : 260 }}>
+          <FaUserCircle size={48} />
+          <h3 style={{ marginTop: 10, color: "#fff" }}>Admin</h3>
 
-      {/* Main Content Area Wrapper */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        
-        <main className={styles.main} style={{ flex: 1 }}>
-          <h1>{adminName} Dashboard</h1>
+          <div style={sideItem}><FaTachometerAlt /> Dashboard</div>
+          <div style={sideItem}onClick={() => navigate("/admin/pending")}>🟥 लंबित
+           
+          </div>
+          <div style={sideItem}onClick={() => navigate("/admin/in-progress")}>🟨 प्रक्रिया में</div>
+          <div style={sideItem}onClick={() => navigate("/admin/completed")}>🟩 निस्तारित</div>
+          <div style={sideItem}onClick={() => navigate("/admin/overall")}>📊 Overall Status</div>
 
-          {!loading && (
+          <div onClick={handleLogout} style={{ cursor: "pointer", marginTop: 30 }}>
+            <FaSignOutAlt /> Logout
+          </div>
+        </aside>
+
+        {/* ================= MAIN ================= */}
+        <main style={{ flex: 1, padding: isMobile ? 15 : 30, color: "#000" }}>
+          <h1 style={title}>Admin Dashboard</h1>
+
+          {loading ? (
+            <p style={centerText}>लोड हो रहा है...</p>
+          ) : (
             <>
-              {/* Summary Cards */}
-              <div className={styles.cards}>
-                <div className={styles.card}>
-                  <h3>Total Projects</h3>
-                  <p>{animatedCounts.total}</p>
+              {/* ================= TOP CARDS ================= */}
+              <div style={cards}>
+                <div style={card}>
+                  <h3>कुल शिकायतें</h3>
+                  <p>{stats.total}</p>
                 </div>
-
-                <div
-                  className={styles.card}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => navigate("/completed")}
-                >
-                  <h3>Completed</h3>
-                  <p style={{ color: "#4CAF50" }}>{animatedCounts.completed}</p>
+                <div style={card}>
+                  <h3>लंबित</h3>
+                  <p style={{ color: "#dc3545" }}>{stats.pending}</p>
                 </div>
-
-                <div
-                  className={styles.card}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => navigate("/Pending")}
-                >
-                  <h3>Pending</h3>
-                  <p style={{ color: "#FF9800" }}>{animatedCounts.pending}</p>
+                <div style={card}>
+                  <h3>प्रक्रिया में</h3>
+                  <p style={{ color: "#ffc107" }}>{stats.progress}</p>
+                </div>
+                <div style={card}>
+                  <h3>निस्तारित</h3>
+                  <p style={{ color: "#198754" }}>{stats.resolved}</p>
                 </div>
               </div>
 
-              {/* Pie Charts */}
-              <div
-                style={{
-                  maxWidth: "900px",
-                  margin: "40px auto",
-                  display: "flex",
-                  gap: "50px",
-                  flexWrap: "wrap",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div style={{ flex: 1, minWidth: "300px", height: "420px" }}>
-                  <h3 style={{ textAlign: "center", color: "#333", minHeight: "50px" }}>
-                    Completed Projects by Department
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={deptStats}
-                        dataKey="completed"
-                        nameKey="department"
-                        cx="50%" cy="50%"
-                        outerRadius={100}
-                        label={{ fill: "#333", fontSize: "12px" }}
-                      >
-                        {deptStats.map((_, index) => (
-                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div style={{ flex: 1, minWidth: "300px", height: "420px" }}>
-                  <h3 style={{ textAlign: "center", color: "#333", minHeight: "50px" }}>
-                    Pending Projects by Department
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={deptStats}
-                        dataKey="pending"
-                        nameKey="department"
-                        cx="50%" cy="50%"
-                        outerRadius={100}
-                        label={{ fill: "#333", fontSize: "12px" }}
-                      >
-                        {deptStats.map((_, index) => (
-                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* ================= PIE CHARTS ================= */}
+              <div style={pieGrid}>
+                {[
+                  { key: "लंबित", title: "लंबित (Department-wise)" },
+                  { key: "प्रक्रिया_में", title: "प्रक्रिया में (Department-wise)" },
+                  { key: "निस्तारित", title: "निस्तारित (Department-wise)" },
+                  { key: "कुल", title: "Overall (Department-wise)" },
+                ].map((item, idx) => (
+                  <div key={idx} style={chartBox}>
+                    <h3 style={chartTitle}>{item.title}</h3>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={deptData}
+                          dataKey={item.key}
+                          nameKey="department"
+                          outerRadius={90}
+                          label={{ fill: "#000", fontSize: 12, fontWeight: 700 }}
+                        >
+                          {deptData.map((_, i) => (
+                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend wrapperStyle={{ color: "#000", fontWeight: 700 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ))}
               </div>
+
+              {/* ================= BAR CHART ================= */}
+             
+              
             </>
           )}
         </main>
-
-        {/* ✅ FOOTER ADDED HERE */}
-        <footer style={{
-          width: '100%',
-          backgroundColor: '#f8f9fa',
-          borderTop: '3px solid #0056b3',
-          padding: '15px 10px',
-          color: '#333',
-          textAlign: 'center',
-          fontFamily: "serif",
-          marginTop: 'auto'
-        }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-            <p style={{ margin: '0', fontSize: '0.9rem', fontWeight: 'bold', color: '#002147' }}>
-              District Administration
-            </p>
-            <p style={{ margin: '4px 0', fontSize: '0.75rem', opacity: 0.8 }}>
-              Designed and Developed by <strong>District Administration</strong>
-            </p>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              gap: '12px',
-              fontSize: '0.7rem',
-              borderTop: '1px solid #ddd',
-              marginTop: '10px',
-              paddingTop: '10px'
-            }}>
-              <span>&copy; {new Date().getFullYear()} All Rights Reserved.</span>
-              <span>|</span>
-              <span>Official Digital Portal</span>
-            </div>
-          </div>
-        </footer>
       </div>
-    </div>
+
+      {/* ================= FOOTER ================= */}
+      <footer style={footer}>
+        <p style={{ margin: 0, fontWeight: 800 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700 }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
+    </>
   );
 }
+
+/* ================= STYLES ================= */
+
+const sidebar = {
+  background: "#002147",
+  color: "#fff",
+  padding: 20,
+};
+
+const sideItem = {
+  marginTop: 14,
+  cursor: "pointer",
+  fontWeight: 700,
+};
+
+const title = {
+  textAlign: "center",
+  fontWeight: 900,
+  color: "#000",
+};
+
+const chartTitle = {
+  textAlign: "center",
+  color: "#000",
+  fontWeight: 800,
+  marginBottom: 10,
+};
+
+const centerText = {
+  textAlign: "center",
+  fontWeight: 700,
+  color: "#000",
+};
+
+const cards = {
+  display: "flex",
+  gap: 20,
+  flexWrap: "wrap",
+  justifyContent: "center",
+  marginBottom: 40,
+};
+
+const card = {
+  background: "#f8f9fa",
+  padding: 20,
+  borderRadius: 10,
+  minWidth: 180,
+  textAlign: "center",
+  fontWeight: 800,
+  color: "#000",
+};
+
+const pieGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 30,
+};
+
+const chartBox = {
+  background: "#f8f9fa",
+  padding: 15,
+  borderRadius: 10,
+};
+
+const footer = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  background: "#fff",
+  borderTop: "4px solid #0056b3",
+  textAlign: "center",
+  padding: 10,
+  color: "#000",
+};

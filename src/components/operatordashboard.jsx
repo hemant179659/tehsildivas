@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -35,7 +35,7 @@ export default function ComplaintRegister() {
   const [documents, setDocuments] = useState([]);
 
   const [assignedBy, setAssignedBy] = useState("");
-  const [assignedPlace, setAssignedPlace] = useState(loggedTehsil || "");
+  const [assignedPlace] = useState(loggedTehsil || "");
   const [assignedDate, setAssignedDate] = useState("");
   const [department, setDepartment] = useState("");
 
@@ -73,7 +73,6 @@ export default function ComplaintRegister() {
       mobile.length !== 10 ||
       !complaintDetails ||
       !assignedBy ||
-      !assignedPlace ||
       !assignedDate ||
       !department
     ) {
@@ -137,16 +136,24 @@ export default function ComplaintRegister() {
     setSubmitted(false);
   };
 
-  // ================= INLINE STYLES =================
-  const label = { fontWeight: 700, marginBottom: 6, color: "#000" };
+  /* ================= STYLES ================= */
+
+  const label = {
+    fontWeight: 800,
+    marginBottom: 6,
+    color: "#000000",
+  };
+
   const input = {
     width: "100%",
     padding: "10px",
     borderRadius: "8px",
-    border: "1px solid #555",
-    color: "#000",
-    backgroundColor: "#fff",
+    border: "1.5px solid #444",
+    color: "#000000",
+    backgroundColor: "#ffffff",
+    fontWeight: 600,
   };
+
   const group = { marginBottom: "15px" };
 
   const button = {
@@ -158,16 +165,13 @@ export default function ComplaintRegister() {
     borderRadius: "8px",
     fontWeight: 700,
     cursor: loading ? "not-allowed" : "pointer",
-    display: "flex",
-    justifyContent: "center",
-    gap: "10px",
   };
 
   return (
     <>
       <ToastContainer autoClose={2000} />
 
-      <div style={{ display: "flex", minHeight: "100vh", background: "#f4f7f6" }}>
+      <div style={{ display: "flex", minHeight: "100vh" }}>
         {/* SIDEBAR */}
         <aside
           style={{
@@ -183,35 +187,28 @@ export default function ComplaintRegister() {
             <p style={{ fontSize: "0.8rem" }}>{loggedTehsil}</p>
           </div>
 
-          <div
-            onClick={() => navigate("/operator-dashboard")}
-            style={{ cursor: "pointer", marginBottom: 16 }}
-          >
+          <div onClick={() => navigate("/operator-dashboard")} style={{ cursor: "pointer", marginBottom: 16 }}>
             <FaTachometerAlt /> Dashboard
           </div>
 
-          <div
-            onClick={() => navigate("/registered-complaints")}
-            style={{ cursor: "pointer", marginBottom: 16 }}
-          >
+          <div onClick={() => navigate("/registered-complaints")} style={{ cursor: "pointer", marginBottom: 16 }}>
             <FaList /> Registered Complaints
           </div>
 
-          <div
-            onClick={handleLogout}
-            style={{ cursor: "pointer", marginBottom: 16 }}
-          >
+          <div onClick={handleLogout} style={{ cursor: "pointer" }}>
             <FaSignOutAlt /> Logout
           </div>
         </aside>
 
         {/* MAIN */}
-        <main style={{ flex: 1, padding: "30px", background: "#fff" }}>
+        <main style={{ flex: 1, padding: 30, background: "#ffffff" }}>
           <h1
             style={{
               textAlign: "center",
               fontWeight: 900,
-              color: "#000",
+              fontSize: "1.9rem",
+              color: "#000000",
+              marginBottom: 25,
             }}
           >
             शिकायत पंजीकरण फॉर्म
@@ -221,72 +218,51 @@ export default function ComplaintRegister() {
             <>
               <div style={group}>
                 <label style={label}>शिकायतकर्ता का नाम</label>
-                <input
-                  style={input}
-                  value={complainantName}
-                  onChange={(e) => setComplainantName(e.target.value)}
-                />
+                <input style={input} value={complainantName} onChange={(e) => setComplainantName(e.target.value)} />
               </div>
 
               <div style={group}>
                 <label style={label}>पिता / पति का नाम</label>
-                <input
-                  style={input}
-                  value={guardianName}
-                  onChange={(e) => setGuardianName(e.target.value)}
-                />
+                <input style={input} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
               </div>
 
               <div style={group}>
                 <label style={label}>पूरा पता</label>
-                <textarea
-                  style={input}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
+                <textarea style={input} value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
 
               <div style={group}>
                 <label style={label}>मोबाइल नंबर</label>
-                <input
-                  style={input}
-                  maxLength="10"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                />
+                <input style={input} maxLength="10" value={mobile} onChange={(e) => setMobile(e.target.value)} />
               </div>
 
               <div style={group}>
                 <label style={label}>शिकायत का विवरण</label>
-                <textarea
-                  style={input}
-                  value={complaintDetails}
-                  onChange={(e) =>
-                    setComplaintDetails(e.target.value)
-                  }
-                />
+                <textarea style={input} value={complaintDetails} onChange={(e) => setComplaintDetails(e.target.value)} />
               </div>
 
               <div style={group}>
                 <label style={label}>संबंधित दस्तावेज़</label>
                 <input type="file" multiple onChange={handleFileChange} />
+
                 {documents.map((file, index) => (
                   <div
                     key={index}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      marginTop: 6,
-                      background: "#e9ecef",
-                      padding: "6px 10px",
+                      marginTop: 8,
+                      background: "#f1f3f5",
+                      padding: "8px 12px",
                       borderRadius: 6,
-                      fontWeight: 800,
-                      color: "#000",
+                      border: "1px solid #ced4da",
                     }}
                   >
-                    <span style={{ flex: 1 }}>{file.name}</span>
+                    <span style={{ flex: 1, fontWeight: 700, color: "#000" }}>
+                      {file.name}
+                    </span>
                     <FaTimes
-                      style={{ cursor: "pointer", color: "red" }}
+                      style={{ cursor: "pointer", color: "#dc3545" }}
                       onClick={() => removeFile(index)}
                     />
                   </div>
@@ -295,35 +271,22 @@ export default function ComplaintRegister() {
 
               <div style={group}>
                 <label style={label}>शिकायत सौंपने वाला अधिकारी</label>
-                <input
-                  style={input}
-                  value={assignedBy}
-                  onChange={(e) => setAssignedBy(e.target.value)}
-                />
+                <input style={input} value={assignedBy} onChange={(e) => setAssignedBy(e.target.value)} />
               </div>
 
               <div style={group}>
-                <label style={label}>सौंपा गया स्थान (Tehsil)</label>
+                <label style={label}>सौंपा गया स्थान</label>
                 <input style={input} value={assignedPlace} disabled />
               </div>
 
               <div style={group}>
                 <label style={label}>सौंपने की तिथि</label>
-                <input
-                  type="date"
-                  style={input}
-                  value={assignedDate}
-                  onChange={(e) => setAssignedDate(e.target.value)}
-                />
+                <input type="date" style={input} value={assignedDate} onChange={(e) => setAssignedDate(e.target.value)} />
               </div>
 
               <div style={group}>
                 <label style={label}>संबंधित विभाग</label>
-                <select
-                  style={input}
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                >
+                <select style={input} value={department} onChange={(e) => setDepartment(e.target.value)}>
                   <option value="">-- विभाग चुनें --</option>
                   <option value="राजस्व विभाग">राजस्व विभाग</option>
                   <option value="पुलिस विभाग">पुलिस विभाग</option>
@@ -332,34 +295,20 @@ export default function ComplaintRegister() {
                 </select>
               </div>
 
-              <button
-                style={button}
-                onClick={handleSubmit}
-                disabled={loading}
-              >
+              <button style={button} onClick={handleSubmit} disabled={loading}>
                 शिकायत दर्ज करें
               </button>
             </>
           ) : (
             <>
-              <h2
-                style={{
-                  textAlign: "center",
-                  color: "#198754",
-                  fontWeight: 900,
-                }}
-              >
+              <h2 style={{ textAlign: "center", color: "#198754", fontWeight: 900 }}>
                 शिकायत सफलतापूर्वक दर्ज हो गई
               </h2>
-              <h1
-                style={{
-                  textAlign: "center",
-                  fontWeight: 900,
-                  color: "#000",
-                }}
-              >
+
+              <h1 style={{ textAlign: "center", fontWeight: 900, color: "#000" }}>
                 शिकायत ID : {generatedId}
               </h1>
+
               <div style={{ textAlign: "center", marginTop: 20 }}>
                 <button style={button} onClick={handleNewComplaint}>
                   नई शिकायत दर्ज करें
@@ -370,31 +319,19 @@ export default function ComplaintRegister() {
         </main>
       </div>
 
+      {/* FOOTER */}
       <footer
         style={{
-          width: "100vw",
           backgroundColor: "#f8f9fa",
           borderTop: "3px solid #0056b3",
-          padding: "12px",
+          padding: "10px",
           textAlign: "center",
         }}
       >
-        <p
-          style={{
-            margin: 0,
-            fontWeight: "bold",
-            color: "#002147",
-          }}
-        >
+        <p style={{ margin: 0, fontWeight: "bold", color: "#002147" }}>
           District Administration
         </p>
-        <p
-          style={{
-            margin: "2px 0",
-            fontSize: "0.7rem",
-            color: "#000",
-          }}
-        >
+        <p style={{ margin: 0, fontSize: "0.7rem" }}>
           Designed and Developed by <strong>District Administration</strong>
         </p>
       </footer>

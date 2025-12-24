@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaFileAlt } from "react-icons/fa";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function DeptInProgress() {
   const department = localStorage.getItem("loggedInDepartment");
-  const [complaints, setComplaints] = useState([]);
 
+  const [complaints, setComplaints] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  /* ================= RESIZE ================= */
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  /* ================= FETCH ================= */
   useEffect(() => {
     axios
       .get(
@@ -17,55 +29,86 @@ export default function DeptInProgress() {
             (c) => c.status === "प्रक्रिया में"
           )
         );
-      });
+      })
+      .catch(() => toast.error("लोड नहीं हो सका"));
   }, [department]);
 
   return (
-    <div style={page}>
-      <h1 style={heading}>🟨 प्रक्रिया में शिकायतें</h1>
+    <>
+      <ToastContainer autoClose={2000} />
 
-      {complaints.length === 0 ? (
-        <p style={empty}>कोई शिकायत प्रक्रिया में नहीं है</p>
-      ) : (
-        complaints.map((c) => (
-          <div key={c.complaintId} style={card}>
-            <p><b>शिकायत ID:</b> {c.complaintId}</p>
-            <p><b>विवरण:</b> {c.complaintDetails}</p>
+      <div
+        style={{
+          ...page,
+          padding: isMobile ? "15px" : "30px",
+          paddingBottom: "80px", // footer space
+        }}
+      >
+        <h1
+          style={{
+            ...heading,
+            fontSize: isMobile ? "1.4rem" : "1.8rem",
+          }}
+        >
+          🟨 प्रक्रिया में शिकायतें
+        </h1>
 
-            <p>
-              <b>स्थिति:</b>{" "}
-              <span style={status}>प्रक्रिया में</span>
-            </p>
+        {complaints.length === 0 ? (
+          <p style={empty}>कोई शिकायत प्रक्रिया में नहीं है</p>
+        ) : (
+          complaints.map((c) => (
+            <div key={c.complaintId} style={card}>
+              <p>
+                <b>शिकायत ID:</b> {c.complaintId}
+              </p>
 
-            <p>
-              <b>Latest Remark:</b>{" "}
-              <span style={{ fontWeight: 600 }}>
-                {c.remarksHistory?.slice(-1)[0]?.remark || "—"}
-              </span>
-            </p>
+              <p>
+                <b>विवरण:</b> {c.complaintDetails}
+              </p>
 
-            {c.documents?.length > 0 && (
-              <div style={{ marginTop: 10 }}>
-                <b>संलग्न दस्तावेज़:</b>
-                {c.documents.map((d, i) => (
-                  <div key={i} style={docRow}>
-                    <FaFileAlt color="#0d6efd" />
-                    <a
-                      href={d.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={docLink}
-                    >
-                      दस्तावेज़ {i + 1}
-                    </a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))
-      )}
-    </div>
+              <p>
+                <b>स्थिति:</b>{" "}
+                <span style={status}>प्रक्रिया में</span>
+              </p>
+
+              <p>
+                <b>Latest Remark:</b>{" "}
+                <span style={{ fontWeight: 600 }}>
+                  {c.remarksHistory?.slice(-1)[0]?.remark || "—"}
+                </span>
+              </p>
+
+              {c.documents?.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <b>संलग्न दस्तावेज़:</b>
+                  {c.documents.map((d, i) => (
+                    <div key={i} style={docRow}>
+                      <FaFileAlt color="#0d6efd" />
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={docLink}
+                      >
+                        दस्तावेज़ {i + 1}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ===== FIXED FOOTER (SAME AS LOGIN) ===== */}
+      <footer style={footerStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
+    </>
   );
 }
 
@@ -73,7 +116,6 @@ export default function DeptInProgress() {
 
 const page = {
   minHeight: "100vh",
-  padding: "30px",
   background: "#f4f6f9",
   color: "#000",
 };
@@ -81,7 +123,6 @@ const page = {
 const heading = {
   textAlign: "center",
   fontWeight: 900,
-  fontSize: "1.8rem",
   marginBottom: 30,
 };
 
@@ -117,4 +158,18 @@ const docLink = {
   color: "#0d6efd",
   fontWeight: 700,
   textDecoration: "underline",
+};
+
+/* ================= FOOTER ================= */
+
+const footerStyle = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#ffffff",
+  textAlign: "center",
+  padding: "10px",
+  borderTop: "4px solid #0056b3",
+  color: "#000",
+  zIndex: 999,
 };

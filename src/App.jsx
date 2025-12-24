@@ -10,6 +10,11 @@ import RegisteredComplaints from "./components/RegisteredComplaints";
 
 /* ================= ADMIN ================= */
 import AdminDashboard from "./components/AdminDashboard";
+import  AdminLogin from "./components/AdminLogin";
+import  AdminPending from "./components/AdminPending.jsx";
+import  AdminInProgress from "./components/AdminInProgress.jsx";
+import  AdminCompleted from "./components/AdminCompleted.jsx";
+import  AdminOverall from "./components/AdminOverall.jsx";
 import AdminProjectList from "./components/AdminProjectList";
 import DepartmentStatus from "./components/DepartmentStatus";
 import Completed from "./components/Completed";
@@ -22,6 +27,7 @@ import DepartmentSignup from "./components/DepartmentSignup";
 import DepartmentForgot from "./components/DepartmentForgot";
 import Verification from "./components/verification";
 import DeptResetPassword from "./components/DeptResetPassword";
+import ComplaintStatus from "./components/ComplaintStatus";
 
 /* ================= DEPARTMENT MAIN ================= */
 import DepartmentDashboard from "./components/DepartmentDashboard";
@@ -55,10 +61,12 @@ export default function App() {
 
         {/* ================= ADMIN ================= */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-project-list" element={<AdminProjectList />} />
         <Route path="/department-status" element={<DepartmentStatus />} />
         <Route path="/completed" element={<Completed />} />
         <Route path="/pending" element={<Pending />} />
+        <Route path="/admin/pending" element={<AdminPending />} />
         <Route
           path="/projectrecentphotoadmin"
           element={<ProjectPhotoAdmin />}
@@ -90,6 +98,11 @@ export default function App() {
 <Route path="/dept/resolved" element={<DeptResolved />} />
 <Route path="/dept/overall" element={<DeptOverall />} />
 
+
+<Route path="/complaint-status" element={<ComplaintStatus />} />
+<Route path="/admin/in-progress" element={<AdminInProgress />} />
+<Route path="/admin/completed" element={<AdminCompleted />} />
+<Route path="/admin/overall" element={<AdminOverall />} />
 
         {/* ================= OTHER ================= */}
         <Route path="/project-list" element={<ProjectList />} />

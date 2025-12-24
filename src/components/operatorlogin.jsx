@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import styles from "../styles/styles.module.css";
 import BackButton from "./BackButton";
 import backgroundImage from "../assets/login.jpg";
 
@@ -43,52 +42,43 @@ export default function DataEntryLogin() {
 
   const handleLogin = () => {
     if (!tehsil || !email || !password) {
-      alert("Please fill all fields");
+      alert("कृपया सभी जानकारी भरें");
       return;
     }
 
     const user = TEHSIL_USERS[tehsil];
     if (!user) {
-      alert("Invalid Tehsil");
+      alert("अमान्य तहसील");
       return;
     }
 
     if (email === user.email && password === user.password) {
-      // ✅ STORE PROPER VALUES (NO BOOLEAN)
-      localStorage.setItem(
-        "dataEntryOperator",
-        user.operatorName
-      );
+      localStorage.setItem("dataEntryOperator", user.operatorName);
       localStorage.setItem("loggedTehsil", tehsil);
-
       navigate("/operator-dashboard", { replace: true });
     } else {
-      alert("Invalid email or password");
+      alert("गलत ईमेल या पासवर्ड");
     }
   };
 
   return (
-    <div className={styles.loginPage}>
-      <div
-        className={styles.leftSection}
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          height: isMobile ? "220px" : "100vh",
-        }}
-      >
-        <BackButton onClick={() => navigate("/")} />
-      </div>
+    <div style={pageWrapper}>
+      {/* LEFT IMAGE */}
+      {!isMobile && (
+        <div style={leftSection}>
+          <div style={leftImage} />
+          <div style={overlay} />
+          <BackButton onClick={() => navigate("/")} />
+        </div>
+      )}
 
-      <div className={styles.rightSection}>
-        <div className={styles.loginBox}>
-          <h2>Data Entry Operator Login</h2>
+      {/* RIGHT FORM */}
+      <div style={rightSection}>
+        <div style={loginBox}>
+          <h2 style={title}>डेटा एंट्री ऑपरेटर लॉगिन</h2>
 
-          <select
-            className={styles.inputField}
-            value={tehsil}
-            onChange={(e) => setTehsil(e.target.value)}
-          >
-            <option value="">-- Select Tehsil --</option>
+          <select style={input} value={tehsil} onChange={(e) => setTehsil(e.target.value)}>
+            <option value="">-- तहसील चुनें --</option>
             {Object.keys(TEHSIL_USERS).map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -97,26 +87,124 @@ export default function DataEntryLogin() {
           </select>
 
           <input
-            className={styles.inputField}
+            style={input}
             type="email"
-            placeholder="Email"
+            placeholder="ईमेल"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
 
           <input
-            className={styles.inputField}
+            style={input}
             type="password"
-            placeholder="Password"
+            placeholder="पासवर्ड"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button className={styles.loginBtn} onClick={handleLogin}>
-            Login
+          <button style={loginBtn} onClick={handleLogin}>
+            लॉगिन करें
           </button>
         </div>
       </div>
+
+      {/* FOOTER */}
+      <footer style={footerStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
     </div>
   );
 }
+
+/* ================= STYLES ================= */
+
+const pageWrapper = {
+  minHeight: "100vh",
+  display: "flex",
+  flexDirection: "row",
+  position: "relative",
+  backgroundColor: "#f4f6f9",
+};
+
+const leftSection = {
+  flex: 1,
+  position: "relative",
+  overflow: "hidden",
+};
+
+const leftImage = {
+  position: "absolute",
+  inset: 0,
+  backgroundImage: `url(${backgroundImage})`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  zIndex: 1,
+};
+
+const overlay = {
+  position: "absolute",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.35)", // ✅ ONLY overlay has opacity
+  zIndex: 2,
+};
+
+const rightSection = {
+  flex: 1,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 20,
+  backgroundColor: "#ffffff",
+  zIndex: 3,
+};
+
+const loginBox = {
+  width: "100%",
+  maxWidth: 380,
+  background: "#fff",
+  padding: 30,
+  borderRadius: 10,
+  boxShadow: "0 6px 18px rgba(0,0,0,0.2)",
+};
+
+const title = {
+  textAlign: "center",
+  marginBottom: 20,
+  fontWeight: 900,
+  color: "#000",
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  marginBottom: 14,
+  borderRadius: 6,
+  border: "2px solid #000",
+  fontWeight: 600,
+};
+
+const loginBtn = {
+  width: "100%",
+  padding: 12,
+  backgroundColor: "#0056b3",
+  color: "#fff",
+  border: "none",
+  borderRadius: 6,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const footerStyle = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#ffffff",
+  textAlign: "center",
+  padding: "10px",
+  borderTop: "4px solid #0056b3",
+  color: "#000",
+  zIndex: 5,
+};

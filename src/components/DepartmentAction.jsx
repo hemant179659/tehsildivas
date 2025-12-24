@@ -18,10 +18,16 @@ export default function DepartmentAction() {
 
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // per-complaint remark text
   const [remarks, setRemarks] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  /* ================= RESIZE ================= */
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
 
   /* ================= PROTECT ROUTE ================= */
   useEffect(() => {
@@ -38,7 +44,6 @@ export default function DepartmentAction() {
           `http://localhost:8000/api/department/department-complaints?department=${loggedDepartment}`
         );
 
-        // only active complaints here
         const active = (res.data.complaints || []).filter(
           (c) => c.status !== "निस्तारित"
         );
@@ -56,16 +61,15 @@ export default function DepartmentAction() {
 
   /* ================= STATUS COLOR ================= */
   const statusColor = (status) => {
-    if (status === "लंबित") return "#dc3545"; // red
-    if (status === "प्रक्रिया में") return "#ffc107"; // yellow
-    if (status === "निस्तारित") return "#198754"; // green
+    if (status === "लंबित") return "#dc3545";
+    if (status === "प्रक्रिया में") return "#ffc107";
+    if (status === "निस्तारित") return "#198754";
     return "#000";
   };
 
   /* ================= UPDATE STATUS ================= */
   const updateStatus = async (complaintId, status) => {
     const remark = remarks[complaintId];
-
     if (!remark || !remark.trim()) {
       return toast.warning("कृपया टिप्पणी दर्ज करें");
     }
@@ -75,36 +79,25 @@ export default function DepartmentAction() {
 
       await axios.put(
         `http://localhost:8000/api/department/update-status/${complaintId}`,
-        {
-          status,
-          remark,
-          department: loggedDepartment,
-        }
+        { status, remark, department: loggedDepartment }
       );
 
       toast.success("स्थिति अपडेट हो गई");
 
       if (status === "निस्तारित") {
-        // resolved → hide card from this dashboard
         setComplaints((prev) =>
           prev.filter((c) => c.complaintId !== complaintId)
         );
       } else {
-        // in progress → show latest remark
         setComplaints((prev) =>
           prev.map((c) =>
             c.complaintId === complaintId
-              ? {
-                  ...c,
-                  status,
-                  latestRemark: remark,
-                }
+              ? { ...c, status, latestRemark: remark }
               : c
           )
         );
       }
 
-      // clear textarea for that complaint
       setRemarks((prev) => {
         const copy = { ...prev };
         delete copy[complaintId];
@@ -126,54 +119,33 @@ export default function DepartmentAction() {
     <>
       <ToastContainer autoClose={2000} />
 
-      <div style={{ display: "flex", minHeight: "100vh", background: "#fff" }}>
+      <div
+        style={{
+          display: "flex",
+          minHeight: "100vh",
+          background: "#fff",
+          flexDirection: isMobile ? "column" : "row",
+          paddingBottom: "80px", // footer space
+        }}
+      >
         {/* ================= SIDEBAR ================= */}
-        <aside style={sidebar}>
+        <aside style={{ ...sidebar, width: isMobile ? "100%" : 260 }}>
           <FaUserCircle size={48} />
           <h3 style={{ marginTop: 10 }}>{loggedDepartment}</h3>
 
-          <div style={sideItem}>
-            <FaTachometerAlt /> Dashboard
-          </div>
+          <div style={sideItem}><FaTachometerAlt /> Dashboard</div>
+          <div style={sideItem} onClick={() => navigate("/dept/pending")}>🟥 लंबित शिकायतें</div>
+          <div style={sideItem} onClick={() => navigate("/dept/in-progress")}>🟨 प्रक्रिया में शिकायतें</div>
+          <div style={sideItem} onClick={() => navigate("/dept/resolved")}>🟩 निस्तारित शिकायतें</div>
+          <div style={sideItem} onClick={() => navigate("/dept/overall")}>📊 Overall Status</div>
 
-          <div
-            style={sideItem}
-            onClick={() => navigate("/dept/pending")}
-          >
-            🟥 लंबित शिकायतें
-          </div>
-
-          <div
-            style={sideItem}
-            onClick={() => navigate("/dept/in-progress")}
-          >
-            🟨 प्रक्रिया में शिकायतें
-          </div>
-
-          <div
-            style={sideItem}
-            onClick={() => navigate("/dept/resolved")}
-          >
-            🟩 निस्तारित शिकायतें
-          </div>
-
-          <div
-            style={sideItem}
-            onClick={() => navigate("/dept/overall")}
-          >
-            📊 Overall Status
-          </div>
-
-          <div
-            onClick={handleLogout}
-            style={{ cursor: "pointer", marginTop: 30 }}
-          >
+          <div onClick={handleLogout} style={{ cursor: "pointer", marginTop: 30 }}>
             <FaSignOutAlt /> Logout
           </div>
         </aside>
 
         {/* ================= MAIN ================= */}
-        <main style={main}>
+        <main style={{ ...main, padding: isMobile ? 15 : 30 }}>
           <h1 style={title}>विभागीय शिकायतें (कार्यवाही)</h1>
 
           {loading ? (
@@ -188,19 +160,13 @@ export default function DepartmentAction() {
                 <p><b>मोबाइल:</b> {c.mobile}</p>
                 <p><b>विवरण:</b> {c.complaintDetails}</p>
 
-                {/* ===== DOCUMENTS ===== */}
                 {c.documents?.length > 0 && (
                   <div style={{ marginTop: 10 }}>
                     <b>संलग्न दस्तावेज़:</b>
                     {c.documents.map((doc, idx) => (
                       <div key={idx} style={docRow}>
                         <FaFileAlt />
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={docLink}
-                        >
+                        <a href={doc.url} target="_blank" rel="noreferrer" style={docLink}>
                           दस्तावेज़ {idx + 1}
                         </a>
                       </div>
@@ -210,17 +176,11 @@ export default function DepartmentAction() {
 
                 <p style={{ marginTop: 10 }}>
                   <b>स्थिति:</b>{" "}
-                  <span
-                    style={{
-                      fontWeight: 900,
-                      color: statusColor(c.status),
-                    }}
-                  >
+                  <span style={{ fontWeight: 900, color: statusColor(c.status) }}>
                     {c.status}
                   </span>
                 </p>
 
-                {/* ===== LATEST REMARK ===== */}
                 {c.latestRemark && (
                   <div style={remarkBox}>
                     <b>टिप्पणी:</b>
@@ -228,7 +188,6 @@ export default function DepartmentAction() {
                   </div>
                 )}
 
-                {/* ===== REMARK TEXTAREA ===== */}
                 <textarea
                   style={textarea}
                   placeholder="यहाँ टिप्पणी लिखें..."
@@ -245,9 +204,7 @@ export default function DepartmentAction() {
                   <button
                     style={btnYellow}
                     disabled={actionLoading}
-                    onClick={() =>
-                      updateStatus(c.complaintId, "प्रक्रिया में")
-                    }
+                    onClick={() => updateStatus(c.complaintId, "प्रक्रिया में")}
                   >
                     <FaSpinner /> प्रक्रिया में
                   </button>
@@ -255,9 +212,7 @@ export default function DepartmentAction() {
                   <button
                     style={btnGreen}
                     disabled={actionLoading}
-                    onClick={() =>
-                      updateStatus(c.complaintId, "निस्तारित")
-                    }
+                    onClick={() => updateStatus(c.complaintId, "निस्तारित")}
                   >
                     <FaCheckCircle /> निस्तारित
                   </button>
@@ -267,6 +222,14 @@ export default function DepartmentAction() {
           )}
         </main>
       </div>
+
+      {/* ===== FIXED FOOTER (SAME AS LOGIN) ===== */}
+      <footer style={footerStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
     </>
   );
 }
@@ -274,7 +237,6 @@ export default function DepartmentAction() {
 /* ================= STYLES ================= */
 
 const sidebar = {
-  width: 260,
   background: "#002147",
   color: "#fff",
   padding: 20,
@@ -288,7 +250,6 @@ const sideItem = {
 
 const main = {
   flex: 1,
-  padding: 30,
   background: "#fff",
   color: "#000",
 };
@@ -353,4 +314,16 @@ const docRow = {
 const docLink = {
   color: "#0d6efd",
   textDecoration: "underline",
+};
+
+const footerStyle = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#ffffff",
+  textAlign: "center",
+  padding: "10px",
+  borderTop: "4px solid #0056b3",
+  color: "#000",
+  zIndex: 999,
 };

@@ -251,7 +251,6 @@ export const registerComplaint = async (req, res) => {
     });
 
     await complaint.save();
-
     res.status(201).json({ complaintId: complaint.complaintId });
   } catch (err) {
     console.error("Register complaint error:", err);
@@ -259,6 +258,9 @@ export const registerComplaint = async (req, res) => {
   }
 };
 
+/* =========================
+   COMPLAINTS (TEHSIL)
+========================= */
 export const getComplaintsByTehsil = async (req, res) => {
   try {
     const complaints = await Complaint.find({
@@ -273,21 +275,38 @@ export const getComplaintsByTehsil = async (req, res) => {
 };
 
 /* =========================
-   COMPLAINTS (DEPARTMENT)
+   COMPLAINTS (DEPARTMENT + ADMIN)
 ========================= */
 export const getComplaintsByDepartment = async (req, res) => {
   try {
-    const complaints = await Complaint.find({
-      department: req.query.department,
-    }).sort({ createdAt: -1 });
+    const { department, all } = req.query;
 
-    res.json({ complaints });
+    let filter = {};
+
+    // ✅ ADMIN → ALL complaints
+    if (all === "true") {
+      filter = {};
+    }
+    // ✅ DEPARTMENT → own complaints
+    else if (department) {
+      filter = { department };
+    }
+    // ❌ INVALID
+    else {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+
+    const complaints = await Complaint.find(filter).sort({ createdAt: -1 });
+    res.status(200).json({ complaints });
   } catch (err) {
     console.error("Fetch department complaints error:", err);
     res.status(500).json({ message: "Fetch department complaints error" });
   }
 };
 
+/* =========================
+   UPDATE COMPLAINT STATUS
+========================= */
 export const updateComplaintStatus = async (req, res) => {
   try {
     const { complaintId } = req.params;
@@ -328,10 +347,23 @@ export const updateComplaintStatus = async (req, res) => {
     });
 
     await complaint.save();
-
     res.json({ message: "Status updated successfully" });
   } catch (err) {
     console.error("Update complaint status error:", err);
     res.status(500).json({ message: "Update status error" });
   }
+};
+
+/* =========================
+   PUBLIC COMPLAINT STATUS
+========================= */
+export const getComplaintStatus = async (req, res) => {
+  const { complaintId } = req.params;
+
+  const complaint = await Complaint.findOne({ complaintId });
+  if (!complaint) {
+    return res.status(404).json({ message: "शिकायत नहीं मिली" });
+  }
+
+  res.json({ complaint });
 };

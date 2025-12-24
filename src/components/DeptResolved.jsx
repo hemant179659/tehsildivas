@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function DeptResolved() {
   const department = localStorage.getItem("loggedInDepartment");
-  const [complaints, setComplaints] = useState([]);
 
+  const [complaints, setComplaints] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  /* ================= RESIZE ================= */
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  /* ================= FETCH ================= */
   useEffect(() => {
     axios
       .get(
@@ -15,36 +27,67 @@ export default function DeptResolved() {
           (c) => c.status === "निस्तारित"
         );
         setComplaints(resolved);
-      });
+      })
+      .catch(() => toast.error("लोड नहीं हो सका"));
   }, [department]);
 
   return (
-    <div style={page}>
-      <h1 style={heading}>🟩 निस्तारित शिकायतें</h1>
+    <>
+      <ToastContainer autoClose={2000} />
 
-      {complaints.length === 0 ? (
-        <p style={empty}>कोई निस्तारित शिकायत उपलब्ध नहीं है</p>
-      ) : (
-        complaints.map((c) => (
-          <div key={c.complaintId} style={card}>
-            <p><b>शिकायत ID:</b> {c.complaintId}</p>
-            <p><b>विवरण:</b> {c.complaintDetails}</p>
+      <div
+        style={{
+          ...page,
+          padding: isMobile ? "15px" : "30px",
+          paddingBottom: "80px", // footer space
+        }}
+      >
+        <h1
+          style={{
+            ...heading,
+            fontSize: isMobile ? "1.4rem" : "1.8rem",
+          }}
+        >
+          🟩 निस्तारित शिकायतें
+        </h1>
 
-            <p>
-              <b>स्थिति:</b>{" "}
-              <span style={status}>निस्तारित</span>
-            </p>
+        {complaints.length === 0 ? (
+          <p style={empty}>कोई निस्तारित शिकायत उपलब्ध नहीं है</p>
+        ) : (
+          complaints.map((c) => (
+            <div key={c.complaintId} style={card}>
+              <p>
+                <b>शिकायत ID:</b> {c.complaintId}
+              </p>
 
-            <div style={remarkBox}>
-              <b>अंतिम टिप्पणी:</b>
-              <div style={{ marginTop: 4 }}>
-                {c.remarksHistory?.slice(-1)[0]?.remark || "—"}
+              <p>
+                <b>विवरण:</b> {c.complaintDetails}
+              </p>
+
+              <p>
+                <b>स्थिति:</b>{" "}
+                <span style={status}>निस्तारित</span>
+              </p>
+
+              <div style={remarkBox}>
+                <b>अंतिम टिप्पणी:</b>
+                <div style={{ marginTop: 4 }}>
+                  {c.remarksHistory?.slice(-1)[0]?.remark || "—"}
+                </div>
               </div>
             </div>
-          </div>
-        ))
-      )}
-    </div>
+          ))
+        )}
+      </div>
+
+      {/* ===== FIXED FOOTER (SAME AS LOGIN) ===== */}
+      <footer style={footerStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
+    </>
   );
 }
 
@@ -52,7 +95,6 @@ export default function DeptResolved() {
 
 const page = {
   minHeight: "100vh",
-  padding: "30px",
   background: "#f4f6f9",
   color: "#000",
 };
@@ -60,7 +102,6 @@ const page = {
 const heading = {
   textAlign: "center",
   fontWeight: 900,
-  fontSize: "1.8rem",
   marginBottom: 30,
 };
 
@@ -92,4 +133,18 @@ const remarkBox = {
   padding: 10,
   borderRadius: 6,
   fontWeight: 600,
+};
+
+/* ================= FOOTER ================= */
+
+const footerStyle = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#ffffff",
+  textAlign: "center",
+  padding: "10px",
+  borderTop: "4px solid #0056b3",
+  color: "#000",
+  zIndex: 999,
 };

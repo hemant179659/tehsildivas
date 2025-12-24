@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function DeptOverall() {
   const department = localStorage.getItem("loggedInDepartment");
+
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -10,6 +13,16 @@ export default function DeptOverall() {
     resolved: 0,
   });
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  /* ================= RESIZE ================= */
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  /* ================= FETCH ================= */
   useEffect(() => {
     axios
       .get(
@@ -23,35 +36,61 @@ export default function DeptOverall() {
           progress: all.filter((c) => c.status === "प्रक्रिया में").length,
           resolved: all.filter((c) => c.status === "निस्तारित").length,
         });
-      });
+      })
+      .catch(() => toast.error("डेटा लोड नहीं हो सका"));
   }, [department]);
 
   return (
-    <div style={page}>
-      <h1 style={heading}>📊 शिकायत सारांश</h1>
+    <>
+      <ToastContainer autoClose={2000} />
 
-      <div style={grid}>
-        <div style={{ ...card, ...blue }}>
-          <h2 style={count}>{stats.total}</h2>
-          <p style={label}>कुल शिकायतें</p>
-        </div>
+      <div
+        style={{
+          ...page,
+          padding: isMobile ? "15px" : "30px",
+          paddingBottom: "80px", // footer space
+        }}
+      >
+        <h1
+          style={{
+            ...heading,
+            fontSize: isMobile ? "1.4rem" : "1.9rem",
+          }}
+        >
+          📊 शिकायत सारांश
+        </h1>
 
-        <div style={{ ...card, ...red }}>
-          <h2 style={count}>{stats.pending}</h2>
-          <p style={label}>लंबित</p>
-        </div>
+        <div style={grid}>
+          <div style={{ ...card, ...blue }}>
+            <h2 style={count}>{stats.total}</h2>
+            <p style={label}>कुल शिकायतें</p>
+          </div>
 
-        <div style={{ ...card, ...yellow }}>
-          <h2 style={count}>{stats.progress}</h2>
-          <p style={label}>प्रक्रिया में</p>
-        </div>
+          <div style={{ ...card, ...red }}>
+            <h2 style={count}>{stats.pending}</h2>
+            <p style={label}>लंबित</p>
+          </div>
 
-        <div style={{ ...card, ...green }}>
-          <h2 style={count}>{stats.resolved}</h2>
-          <p style={label}>निस्तारित</p>
+          <div style={{ ...card, ...yellow }}>
+            <h2 style={count}>{stats.progress}</h2>
+            <p style={label}>प्रक्रिया में</p>
+          </div>
+
+          <div style={{ ...card, ...green }}>
+            <h2 style={count}>{stats.resolved}</h2>
+            <p style={label}>निस्तारित</p>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* ===== FIXED FOOTER (SAME AS LOGIN) ===== */}
+      <footer style={footerStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
+    </>
   );
 }
 
@@ -59,7 +98,6 @@ export default function DeptOverall() {
 
 const page = {
   minHeight: "100vh",
-  padding: "30px",
   background: "#f4f6f9",
   color: "#000",
 };
@@ -67,7 +105,6 @@ const page = {
 const heading = {
   textAlign: "center",
   fontWeight: 900,
-  fontSize: "1.9rem",
   marginBottom: 30,
 };
 
@@ -117,4 +154,18 @@ const yellow = {
 const green = {
   borderTopColor: "#198754",
   color: "#198754",
+};
+
+/* ================= FOOTER ================= */
+
+const footerStyle = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#ffffff",
+  textAlign: "center",
+  padding: "10px",
+  borderTop: "4px solid #0056b3",
+  color: "#000",
+  zIndex: 999,
 };
