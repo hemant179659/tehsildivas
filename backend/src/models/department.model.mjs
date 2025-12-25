@@ -56,6 +56,10 @@ const complaintSchema = new mongoose.Schema(
     complainantName: { type: String, required: true },
     guardianName: { type: String, required: true },
     address: { type: String, required: true },
+    tehsil: {
+  type: String,
+  required: true,
+},
 
     mobile: {
       type: String,

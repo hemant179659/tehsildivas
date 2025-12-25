@@ -28,7 +28,7 @@ export default function DepartmentForgot() {
 
     setLoading(true);
     try {
-      await axios.post("/api/department/forgot-password", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/department/forgot-password`, {
         email,
       });
 

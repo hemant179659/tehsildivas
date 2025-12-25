@@ -27,7 +27,9 @@ export default function AdminInProgress() {
 
   useEffect(() => {
     axios
-      .get("/api/department/department-complaints?all=true")
+      .get(
+        `${import.meta.env.VITE_API_URL}/department/department-complaints?all=true`
+      )
       .then((res) => {
         const inProgress = (res.data.complaints || []).filter(
           (c) => c.status === "प्रक्रिया में"
@@ -49,6 +51,7 @@ export default function AdminInProgress() {
   return (
     <>
       <ToastContainer autoClose={2000} />
+
       <div style={{ ...page, padding: isMobile ? 15 : 30, paddingBottom: 80 }}>
         <h1 style={heading}>🟨 प्रक्रिया में शिकायतें (Department-wise)</h1>
 
@@ -62,18 +65,68 @@ export default function AdminInProgress() {
               {dept} ({grouped[dept].length})
             </h2>
 
-            {grouped[dept].map((c) => (
-              <div key={c.complaintId} style={card}>
-                <Row label="शिकायत ID" value={c.complaintId} />
-                <Row label="नाम" value={c.complainantName} />
-                <Row label="विवरण" value={c.complaintDetails} />
-                <Row label="स्थिति" value={c.status} valueStyle={statusYellow} />
+            {grouped[dept].map((c) => {
+              const latestRemark =
+                c.remarksHistory?.length > 0
+                  ? c.remarksHistory[c.remarksHistory.length - 1]
+                  : null;
 
-                {c.documents?.length > 0 && (
-                  <DocBox docs={c.documents} />
-                )}
-              </div>
-            ))}
+              return (
+                <div
+                  key={c.complaintId}
+                  style={{
+                    ...card,
+                    display: "grid",
+                    gridTemplateColumns: isMobile ? "1fr" : "2fr 1.2fr",
+                    gap: 20,
+                  }}
+                >
+                  {/* LEFT SIDE – BASIC INFO */}
+                  <div>
+                    <Row label="शिकायत ID" value={c.complaintId} />
+                    <Row label="नाम" value={c.complainantName} />
+                    <Row label="विवरण" value={c.complaintDetails} />
+                    <Row
+                      label="स्थिति"
+                      value={c.status}
+                      valueStyle={statusYellow}
+                    />
+
+                    {c.documents?.length > 0 && (
+                      <DocBox title="संलग्न दस्तावेज़" docs={c.documents} />
+                    )}
+                  </div>
+
+                  {/* RIGHT SIDE – DEPARTMENT ACTION */}
+                  <div
+                    style={{
+                      background: "#f8f9fa",
+                      padding: 14,
+                      borderRadius: 8,
+                      border: "1px solid #dee2e6",
+                    }}
+                  >
+                    {/* Latest Remark */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                        विभाग द्वारा नवीनतम टिप्पणी
+                      </div>
+                      <div style={{ fontWeight: 600 }}>
+                        {latestRemark?.remark || "—"}
+                      </div>
+                    </div>
+
+                    {/* Supporting Documents */}
+                    {c.supportingDocuments?.length > 0 && (
+                      <DocBox
+                        title="विभाग द्वारा संलग्न दस्तावेज़"
+                        docs={c.supportingDocuments}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -91,9 +144,9 @@ const Row = ({ label, value, valueStyle }) => (
   </div>
 );
 
-const DocBox = ({ docs }) => (
+const DocBox = ({ docs, title }) => (
   <div style={docBox}>
-    <span style={labelStyle}>संलग्न दस्तावेज़:</span>
+    <span style={labelStyle}>{title}:</span>
     {docs.map((d, i) => (
       <a key={i} href={d.url} target="_blank" rel="noreferrer" style={docLink}>
         <FaFileAlt /> दस्तावेज़ {i + 1}
@@ -136,8 +189,17 @@ const row = { marginBottom: 8, display: "flex", gap: 6, flexWrap: "wrap" };
 const labelStyle = { fontWeight: 800 };
 const valueStyleBase = { fontWeight: 600 };
 const statusYellow = { fontWeight: 900, color: "#ffc107" };
-const docBox = { marginTop: 10, display: "flex", flexDirection: "column", gap: 6 };
-const docLink = { color: "#0d6efd", fontWeight: 700, textDecoration: "none" };
+const docBox = {
+  marginTop: 10,
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+};
+const docLink = {
+  color: "#0d6efd",
+  fontWeight: 700,
+  textDecoration: "none",
+};
 const footerStyle = {
   position: "fixed",
   bottom: 0,

@@ -31,7 +31,7 @@ export default function Pending() {
     const fetchPendingProjects = async () => {
       try {
         const res = await axios.get(
-          "/api/department/projects?all=true"
+          `${import.meta.env.VITE_API_URL}/department/projects?all=true`
         );
 
         if (res.data?.projects) {

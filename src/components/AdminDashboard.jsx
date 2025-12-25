@@ -56,7 +56,7 @@ export default function AdminProjectDashboard() {
     const fetchAll = async () => {
       try {
         const res = await axios.get(
-          "/api/department/department-complaints?all=true"
+          `${import.meta.env.VITE_API_URL}/department/department-complaints?all=true`
         );
 
         const complaints = res.data.complaints || [];

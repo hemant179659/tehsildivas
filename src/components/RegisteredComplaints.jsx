@@ -33,7 +33,8 @@ export default function RegisteredComplaints() {
     const fetchComplaints = async () => {
       try {
         const res = await axios.get(
-          `/api/department/complaints?tehsil=${loggedTehsil}`
+          `${import.meta.env.VITE_API_URL}/department/department-complaints?tehsil=${loggedTehsil}`
+
         );
         setComplaints(res.data.complaints || []);
       } catch {

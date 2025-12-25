@@ -21,10 +21,10 @@ export default function DeptPending() {
   useEffect(() => {
     axios
       .get(
-        `/api/department/department-complaints?department=${department}`
+        `${import.meta.env.VITE_API_URL}/department/department-complaints?department=${department}`
       )
       .then((res) => {
-        const pending = res.data.complaints.filter(
+        const pending = (res.data.complaints || []).filter(
           (c) => c.status === "लंबित"
         );
         setComplaints(pending);
@@ -40,7 +40,7 @@ export default function DeptPending() {
         style={{
           ...page,
           padding: isMobile ? "15px" : "30px",
-          paddingBottom: "80px", // footer space
+          paddingBottom: "80px",
         }}
       >
         <h1
@@ -52,53 +52,110 @@ export default function DeptPending() {
           🟥 लंबित शिकायतें
         </h1>
 
-        {complaints.length === 0 && (
+        {complaints.length === 0 ? (
           <p style={noData}>कोई शिकायत उपलब्ध नहीं है</p>
-        )}
+        ) : (
+          complaints.map((c) => (
+            <div key={c.complaintId} style={card}>
+              {/* ===== TOP ROW (LEFT + RIGHT) ===== */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "2fr 1.3fr",
+                  gap: 20,
+                }}
+              >
+                {/* ========== LEFT SIDE ========== */}
+                <div>
+                  <p>
+                    <b>शिकायत ID:</b> {c.complaintId}
+                  </p>
 
-        {complaints.map((c) => (
-          <div key={c.complaintId} style={card}>
-            <div style={row}>
-              <span style={label}>शिकायत ID:</span>
-              <span style={value}>{c.complaintId}</span>
-            </div>
+                  <p>
+                    <b>नाम:</b> {c.complainantName}
+                  </p>
 
-            <div style={row}>
-              <span style={label}>नाम:</span>
-              <span style={value}>{c.complainantName}</span>
-            </div>
+                  <p>
+                    <b>स्थिति:</b>{" "}
+                    <span style={statusRed}>{c.status}</span>
+                  </p>
 
-            <div style={row}>
-              <span style={label}>विवरण:</span>
-              <span style={value}>{c.complaintDetails}</span>
-            </div>
+                  <p>
+                    <b>विवरण:</b> {c.complaintDetails}
+                  </p>
 
-            <div style={row}>
-              <span style={label}>स्थिति:</span>
-              <span style={statusRed}>{c.status}</span>
-            </div>
+                  {/* शिकायत के साथ संलग्न दस्तावेज़ */}
+                  {c.documents?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <b>संलग्न दस्तावेज़:</b>
+                      {c.documents.map((d, i) => (
+                        <div key={i} style={docRow}>
+                          <FaFileAlt />
+                          <a
+                            href={d.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={docLink}
+                          >
+                            दस्तावेज़ {i + 1}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-            {c.documents?.length > 0 && (
-              <div style={docBox}>
-                <span style={label}>संलग्न दस्तावेज़:</span>
-                {c.documents.map((d, i) => (
-                  <a
-                    key={i}
-                    href={d.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={docLink}
-                  >
-                    <FaFileAlt /> दस्तावेज़ {i + 1}
-                  </a>
-                ))}
+                {/* ========== RIGHT SIDE ========== */}
+                <div
+                  style={{
+                    background: "#ffffff",
+                    padding: 12,
+                    borderRadius: 8,
+                    border: "1px solid #e0e0e0",
+                  }}
+                >
+                  <p>
+                    <b>शिकायत सौंपे जाने वाला अधिकारी:</b>{" "}
+                    {c.assignedBy || "—"}
+                  </p>
+                  <p>
+                    <b>शिकायत सौंपा गया स्थान:</b>{" "}
+                    {c.assignedPlace || "—"}
+                  </p>
+                  <p>
+                    <b>शिकायत सौंपे जाने की तिथि:</b>{" "}
+                    {c.assignedDate
+                      ? new Date(c.assignedDate).toLocaleDateString("en-IN")
+                      : "—"}
+                  </p>
+
+                  {/* Pending में normally नहीं होंगे, फिर भी safe */}
+                  {c.supportingDocuments?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <b>विभाग द्वारा संलग्न दस्तावेज़:</b>
+                      {c.supportingDocuments.map((d, i) => (
+                        <div key={i} style={docRow}>
+                          <FaFileAlt />
+                          <a
+                            href={d.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={docLink}
+                          >
+                            दस्तावेज़ {i + 1}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))
+        )}
       </div>
 
-      {/* ===== FIXED FOOTER (SAME AS LOGIN) ===== */}
+      {/* ===== FIXED FOOTER ===== */}
       <footer style={footerStyle}>
         <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
         <p style={{ margin: 0, fontSize: "0.75rem" }}>
@@ -138,39 +195,22 @@ const card = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
 };
 
-const row = {
-  marginBottom: 8,
-  display: "flex",
-  gap: 6,
-  flexWrap: "wrap",
-};
-
-const label = {
-  fontWeight: 800,
-  color: "#000",
-};
-
-const value = {
-  fontWeight: 600,
-  color: "#000",
-};
-
 const statusRed = {
   fontWeight: 900,
   color: "#dc3545",
 };
 
-const docBox = {
-  marginTop: 10,
+const docRow = {
   display: "flex",
-  flexDirection: "column",
-  gap: 6,
+  alignItems: "center",
+  gap: 8,
+  marginTop: 6,
 };
 
 const docLink = {
   color: "#0d6efd",
   fontWeight: 700,
-  textDecoration: "none",
+  textDecoration: "underline",
 };
 
 /* ================= FOOTER ================= */

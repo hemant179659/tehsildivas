@@ -38,7 +38,7 @@ export default function DepartmentLogin() {
 
     try {
       const res = await axios.post(
-        "/api/department/login",
+        `${import.meta.env.VITE_API_URL}/department/login`,
         { email, password }
       );
 

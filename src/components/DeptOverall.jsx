@@ -26,7 +26,7 @@ export default function DeptOverall() {
   useEffect(() => {
     axios
       .get(
-        `/api/department/department-complaints?department=${department}`
+        `${import.meta.env.VITE_API_URL}/department/department-complaints?department=${department}`
       )
       .then((res) => {
         const all = res.data.complaints || [];

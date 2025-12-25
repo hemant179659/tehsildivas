@@ -24,7 +24,7 @@ export default function DepartmentStatus() {
     const fetchStats = async () => {
       try {
         const res = await axios.get(
-           "/api/department/projects?all=true"
+           `${import.meta.env.VITE_API_URL}/department/projects?all=true`
         );
 
         const allProjects = res.data.projects || [];

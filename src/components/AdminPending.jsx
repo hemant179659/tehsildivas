@@ -31,7 +31,7 @@ export default function AdminPending() {
   useEffect(() => {
     axios
       .get(
-        "/api/department/department-complaints?all=true"
+        `${import.meta.env.VITE_API_URL}/department/department-complaints?all=true`
       )
       .then((res) => {
         const pending = (res.data.complaints || []).filter(

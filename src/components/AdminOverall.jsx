@@ -30,7 +30,7 @@ export default function AdminOverall() {
   useEffect(() => {
     axios
       .get(
-        "/api/department/department-complaints?all=true"
+        `${import.meta.env.VITE_API_URL}/department/department-complaints?all=true`
       )
       .then((res) => {
         const complaints = res.data.complaints || [];

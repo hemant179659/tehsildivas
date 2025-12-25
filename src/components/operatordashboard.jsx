@@ -91,6 +91,7 @@ export default function ComplaintRegister() {
     formData.append("complaintDetails", complaintDetails);
     formData.append("assignedBy", assignedBy);
     formData.append("assignedPlace", assignedPlace);
+    formData.append("tehsil", loggedTehsil); 
     formData.append("assignedDate", assignedDate);
     formData.append("department", department);
 
@@ -101,7 +102,7 @@ export default function ComplaintRegister() {
     try {
       setLoading(true);
       await axios.post(
-        "/api/department/register",
+        `${import.meta.env.VITE_API_URL}/department/register`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

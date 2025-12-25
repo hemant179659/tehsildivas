@@ -31,14 +31,13 @@ export default function AdminCompleted() {
   useEffect(() => {
     axios
       .get(
-        "/api/department/department-complaints?all=true"
+        `${import.meta.env.VITE_API_URL}/department/department-complaints?all=true`
       )
       .then((res) => {
         const completed = (res.data.complaints || []).filter(
           (c) => c.status === "निस्तारित"
         );
 
-        // 🔹 GROUP BY DEPARTMENT
         const grouped = {};
         completed.forEach((c) => {
           if (!grouped[c.department]) grouped[c.department] = [];
@@ -83,46 +82,82 @@ export default function AdminCompleted() {
               {dept} ({groupedComplaints[dept].length})
             </h2>
 
-            {groupedComplaints[dept].map((c) => (
-              <div key={c.complaintId} style={card}>
-                <div style={row}>
-                  <span style={label}>शिकायत ID:</span>
-                  <span style={value}>{c.complaintId}</span>
-                </div>
+            {groupedComplaints[dept].map((c) => {
+              const latestRemark =
+                c.remarksHistory?.length > 0
+                  ? c.remarksHistory[c.remarksHistory.length - 1]
+                  : null;
 
-                <div style={row}>
-                  <span style={label}>नाम:</span>
-                  <span style={value}>{c.complainantName}</span>
-                </div>
+              return (
+                <div
+                  key={c.complaintId}
+                  style={{
+                    ...card,
+                    display: "grid",
+                    gridTemplateColumns: isMobile ? "1fr" : "2fr 1.2fr",
+                    gap: 20,
+                  }}
+                >
+                  {/* LEFT SIDE – BASIC INFO */}
+                  <div>
+                    <div style={row}>
+                      <span style={label}>शिकायत ID:</span>
+                      <span style={value}>{c.complaintId}</span>
+                    </div>
 
-                <div style={row}>
-                  <span style={label}>विवरण:</span>
-                  <span style={value}>{c.complaintDetails}</span>
-                </div>
+                    <div style={row}>
+                      <span style={label}>नाम:</span>
+                      <span style={value}>{c.complainantName}</span>
+                    </div>
 
-                <div style={row}>
-                  <span style={label}>स्थिति:</span>
-                  <span style={statusGreen}>{c.status}</span>
-                </div>
+                    <div style={row}>
+                      <span style={label}>विवरण:</span>
+                      <span style={value}>{c.complaintDetails}</span>
+                    </div>
 
-                {c.documents?.length > 0 && (
-                  <div style={docBox}>
-                    <span style={label}>संलग्न दस्तावेज़:</span>
-                    {c.documents.map((d, i) => (
-                      <a
-                        key={i}
-                        href={d.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={docLink}
-                      >
-                        <FaFileAlt /> दस्तावेज़ {i + 1}
-                      </a>
-                    ))}
+                    <div style={row}>
+                      <span style={label}>स्थिति:</span>
+                      <span style={statusGreen}>{c.status}</span>
+                    </div>
+
+                    {c.documents?.length > 0 && (
+                      <DocBox
+                        title="संलग्न दस्तावेज़"
+                        docs={c.documents}
+                      />
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* RIGHT SIDE – DEPARTMENT ACTION */}
+                  <div
+                    style={{
+                      background: "#f8f9fa",
+                      padding: 14,
+                      borderRadius: 8,
+                      border: "1px solid #dee2e6",
+                    }}
+                  >
+                    {/* Latest Remark */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                        विभाग द्वारा अंतिम टिप्पणी
+                      </div>
+                      <div style={{ fontWeight: 600 }}>
+                        {latestRemark?.remark || "—"}
+                      </div>
+                    </div>
+
+                    {/* Supporting Documents */}
+                    {c.supportingDocuments?.length > 0 && (
+                      <DocBox
+                        title="विभाग द्वारा संलग्न दस्तावेज़"
+                        docs={c.supportingDocuments}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -137,6 +172,25 @@ export default function AdminCompleted() {
     </>
   );
 }
+
+/* ================= HELPERS ================= */
+
+const DocBox = ({ docs, title }) => (
+  <div style={docBox}>
+    <span style={label}>{title}:</span>
+    {docs.map((d, i) => (
+      <a
+        key={i}
+        href={d.url}
+        target="_blank"
+        rel="noreferrer"
+        style={docLink}
+      >
+        <FaFileAlt /> दस्तावेज़ {i + 1}
+      </a>
+    ))}
+  </div>
+);
 
 /* ===================== STYLES ===================== */
 
@@ -160,9 +214,7 @@ const noData = {
   color: "#000",
 };
 
-const deptSection = {
-  marginBottom: 35,
-};
+const deptSection = { marginBottom: 35 };
 
 const deptHeading = {
   fontWeight: 900,
@@ -189,20 +241,9 @@ const row = {
   flexWrap: "wrap",
 };
 
-const label = {
-  fontWeight: 800,
-  color: "#000",
-};
-
-const value = {
-  fontWeight: 600,
-  color: "#000",
-};
-
-const statusGreen = {
-  fontWeight: 900,
-  color: "#198754",
-};
+const label = { fontWeight: 800, color: "#000" };
+const value = { fontWeight: 600, color: "#000" };
+const statusGreen = { fontWeight: 900, color: "#198754" };
 
 const docBox = {
   marginTop: 10,
@@ -216,8 +257,6 @@ const docLink = {
   fontWeight: 700,
   textDecoration: "none",
 };
-
-/* ================= FOOTER ================= */
 
 const footerStyle = {
   position: "fixed",

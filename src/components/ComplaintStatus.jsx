@@ -19,7 +19,7 @@ export default function ComplaintStatus() {
       setComplaint(null);
 
       const res = await axios.get(
-        `/api/department/complaint-status/${complaintId}`
+        `${import.meta.env.VITE_API_URL}/department/complaint-status/${complaintId}`
       );
 
       setComplaint(res.data.complaint);
@@ -81,7 +81,7 @@ export default function ComplaintStatus() {
                 </span>
               </p>
 
-              {/* LATEST REMARK */}
+              {/* ========= LATEST REMARK ========= */}
               {complaint.remarksHistory?.length > 0 && (
                 <div style={remarkBox}>
                   <div style={{ fontWeight: 800, marginBottom: 6 }}>
@@ -95,22 +95,40 @@ export default function ComplaintStatus() {
                     }
                   </div>
                   <small style={{ fontWeight: 600 }}>
-                    {
-                      new Date(
-                        complaint.remarksHistory[
-                          complaint.remarksHistory.length - 1
-                        ].actionDate
-                      ).toLocaleString("hi-IN")
-                    }
+                    {new Date(
+                      complaint.remarksHistory[
+                        complaint.remarksHistory.length - 1
+                      ].actionDate
+                    ).toLocaleString("hi-IN")}
                   </small>
                 </div>
               )}
 
-              {/* DOCUMENTS */}
+              {/* ========= COMPLAINT DOCUMENTS ========= */}
               {complaint.documents?.length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <b>संलग्न दस्तावेज़:</b>
+                  <b>शिकायत के साथ संलग्न दस्तावेज़:</b>
                   {complaint.documents.map((d, i) => (
+                    <div key={i} style={docRow}>
+                      <FaFileAlt />
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={docLink}
+                      >
+                        दस्तावेज़ {i + 1}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ========= DEPARTMENT SUPPORTING DOCUMENTS ========= */}
+              {complaint.supportingDocuments?.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <b>विभाग द्वारा संलग्न दस्तावेज़:</b>
+                  {complaint.supportingDocuments.map((d, i) => (
                     <div key={i} style={docRow}>
                       <FaFileAlt />
                       <a
@@ -156,7 +174,7 @@ const pageWrapper = {
   minHeight: "100vh",
   display: "flex",
   flexDirection: "column",
-  backgroundColor: "#eef2f6", // light govt background
+  backgroundColor: "#eef2f6",
 };
 
 const contentWrapper = {
@@ -212,7 +230,7 @@ const card = {
   padding: 22,
   borderRadius: 12,
   boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
-  color: "#000",           // ✅ NO FADE
+  color: "#000",
 };
 
 const row = {

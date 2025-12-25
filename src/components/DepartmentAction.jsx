@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -22,8 +22,8 @@ export default function DepartmentAction() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // ✅ ONLY ADDITION
   const [supportDocs, setSupportDocs] = useState({});
+  const fileInputRefs = useRef({});
 
   /* ================= RESIZE ================= */
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function DepartmentAction() {
     const fetchComplaints = async () => {
       try {
         const res = await axios.get(
-          `/api/department/department-complaints?department=${loggedDepartment}`
+          `${import.meta.env.VITE_API_URL}/department/department-complaints?department=${loggedDepartment}`
         );
 
         const active = (res.data.complaints || []).filter(
@@ -62,7 +62,7 @@ export default function DepartmentAction() {
     fetchComplaints();
   }, [loggedDepartment]);
 
-  /* ================= STATUS COLOR ================= */
+  /* ================= HELPERS ================= */
   const statusColor = (status) => {
     if (status === "लंबित") return "#dc3545";
     if (status === "प्रक्रिया में") return "#ffc107";
@@ -70,56 +70,48 @@ export default function DepartmentAction() {
     return "#000";
   };
 
-  /* ================= DATE FORMAT (ONLY DISPLAY) ================= */
-  const formatDateTime = (dateStr) => {
+  const formatDate = (dateStr) => {
     if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return new Date(dateStr).toLocaleDateString("en-IN");
   };
 
-  /* ================= SUPPORT DOC HANDLER ================= */
+  /* ================= SUPPORT DOC HANDLERS ================= */
   const handleSupportDocs = (id, files) => {
     setSupportDocs((prev) => ({
       ...prev,
-      [id]: Array.from(files),
+      [id]: [...(prev[id] || []), ...Array.from(files)],
     }));
+  };
+
+  const removeSupportDoc = (complaintId, index) => {
+    setSupportDocs((prev) => {
+      const files = [...(prev[complaintId] || [])];
+      files.splice(index, 1);
+      return { ...prev, [complaintId]: files };
+    });
   };
 
   /* ================= UPDATE STATUS ================= */
   const updateStatus = async (complaintId, status) => {
-    const remark = remarks[complaintId];
-    if (!remark || !remark.trim()) {
+    const remarkText = remarks[complaintId];
+    if (!remarkText || !remarkText.trim()) {
       return toast.warning("कृपया टिप्पणी दर्ज करें");
     }
-
-    const wantDocs =
-      status === "निस्तारित"
-        ? window.confirm("क्या आप कोई supporting document जोड़ना चाहते हैं?")
-        : false;
 
     try {
       setActionLoading(true);
 
       const formData = new FormData();
       formData.append("status", status);
-      formData.append("remark", remark);
+      formData.append("remark", remarkText);
       formData.append("department", loggedDepartment);
 
-      if (wantDocs && supportDocs[complaintId]) {
-        supportDocs[complaintId].forEach((file) => {
-          formData.append("supportDocs", file); // ✅ MULTIPLE
-        });
-      }
+      (supportDocs[complaintId] || []).forEach((file) => {
+        formData.append("supportDocs", file);
+      });
 
       await axios.put(
-        `/api/department/update-status/${complaintId}`,
+        `${import.meta.env.VITE_API_URL}/department/update-status/${complaintId}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -127,14 +119,45 @@ export default function DepartmentAction() {
       toast.success("स्थिति अपडेट हो गई");
 
       setComplaints((prev) =>
-        prev.filter((c) => c.complaintId !== complaintId)
+        prev.map((c) =>
+          c.complaintId === complaintId
+            ? {
+                ...c,
+                status,
+                remarksHistory: [
+                  ...(c.remarksHistory || []),
+                  {
+                    department: loggedDepartment,
+                    status,
+                    remark: remarkText,
+                  },
+                ],
+              }
+            : c
+        )
       );
+
+      if (status === "निस्तारित") {
+        setComplaints((prev) =>
+          prev.filter((c) => c.complaintId !== complaintId)
+        );
+      }
 
       setRemarks((prev) => {
         const copy = { ...prev };
         delete copy[complaintId];
         return copy;
       });
+
+      setSupportDocs((prev) => {
+        const copy = { ...prev };
+        delete copy[complaintId];
+        return copy;
+      });
+
+      if (fileInputRefs.current[complaintId]) {
+        fileInputRefs.current[complaintId].value = "";
+      }
     } catch {
       toast.error("अपडेट करने में त्रुटि");
     } finally {
@@ -160,7 +183,7 @@ export default function DepartmentAction() {
           paddingBottom: "80px",
         }}
       >
-        {/* ================= SIDEBAR (UNCHANGED) ================= */}
+        {/* ================= SIDEBAR ================= */}
         <aside style={{ ...sidebar, width: isMobile ? "100%" : 260 }}>
           <FaUserCircle size={48} />
           <h3 style={{ marginTop: 10 }}>{loggedDepartment}</h3>
@@ -185,84 +208,153 @@ export default function DepartmentAction() {
           ) : complaints.length === 0 ? (
             <p style={centerText}>कोई सक्रिय शिकायत उपलब्ध नहीं है</p>
           ) : (
-            complaints.map((c) => (
-              <div key={c.complaintId} style={card}>
-                <p><b>शिकायत ID:</b> {c.complaintId}</p>
-                <p><b>नाम:</b> {c.complainantName}</p>
-                <p><b>मोबाइल:</b> {c.mobile}</p>
-                <p><b>विवरण:</b> {c.complaintDetails}</p>
+            complaints.map((c) => {
+              const latestRemark =
+                c.remarksHistory?.length > 0
+                  ? c.remarksHistory[c.remarksHistory.length - 1].remark
+                  : "";
 
-                {/* ✅ REQUIRED 3 FIELDS */}
-                <p><b>सौंपने वाला अधिकारी:</b> {c.assignedBy}</p>
-                <p><b>सौंपा गया स्थान:</b> {c.assignedPlace}</p>
-                <p><b>सौंपी गई तिथि:</b> {formatDateTime(c.assignedDate)}</p>
+              return (
+                <div key={c.complaintId} style={card}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isMobile ? "1fr" : "2fr 1.3fr",
+                      gap: 20,
+                    }}
+                  >
+                    {/* ================= LEFT ================= */}
+                    <div>
+                      <p><b>शिकायत ID:</b> {c.complaintId}</p>
+                      <p><b>नाम:</b> {c.complainantName}</p>
+                      <p><b>मोबाइल:</b> {c.mobile}</p>
 
-                {c.documents?.length > 0 && (
-                  <div style={{ marginTop: 10 }}>
-                    <b>संलग्न दस्तावेज़:</b>
-                    {c.documents.map((doc, idx) => (
-                      <div key={idx} style={docRow}>
-                        <FaFileAlt />
-                        <a href={doc.url} target="_blank" rel="noreferrer" style={docLink}>
-                          दस्तावेज़ {idx + 1}
-                        </a>
-                      </div>
-                    ))}
+                      {/* स्थिति */}
+                      <p style={{ marginTop: 6 }}>
+                        <b>स्थिति:</b>{" "}
+                        <span style={{ fontWeight: 900, color: statusColor(c.status) }}>
+                          {c.status}
+                        </span>
+                      </p>
+
+                      {/* विवरण */}
+                      <p><b>विवरण:</b> {c.complaintDetails}</p>
+
+                      {/* शिकायत के साथ संलग्न दस्तावेज़ */}
+                      {c.documents?.length > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          <b>संलग्न दस्तावेज़:</b>
+                          {c.documents.map((doc, idx) => (
+                            <div key={idx} style={docRow}>
+                              <FaFileAlt />
+                              <a href={doc.url} target="_blank" rel="noreferrer" style={docLink}>
+                                दस्तावेज़ {idx + 1}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ================= RIGHT ================= */}
+                    <div style={{ background: "#fff", padding: 12, borderRadius: 6 }}>
+                      <p><b>शिकायत सौंपे जाने वाला अधिकारी:</b> {c.assignedBy}</p>
+                      <p><b>शिकायत सौंपा गया स्थान:</b> {c.assignedPlace}</p>
+                      <p><b>शिकायत सौंपे जाने की तिथि:</b> {formatDate(c.assignedDate)}</p>
+
+                      {c.supportingDocuments?.length > 0 && (
+                        <div style={{ marginTop: 8 }}>
+                          <b>विभाग द्वारा संलग्न दस्तावेज़:</b>
+                          {c.supportingDocuments.map((doc, idx) => (
+                            <div key={idx} style={docRow}>
+                              <FaFileAlt />
+                              <a href={doc.url} target="_blank" rel="noreferrer" style={docLink}>
+                                दस्तावेज़ {idx + 1}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
 
-                <p style={{ marginTop: 10 }}>
-                  <b>स्थिति:</b>{" "}
-                  <span style={{ fontWeight: 900, color: statusColor(c.status) }}>
-                    {c.status}
-                  </span>
-                </p>
+                  {/* नवीनतम टिप्पणी */}
+                  {latestRemark && (
+                    <p style={{ marginTop: 10 }}>
+                      <b>नवीनतम टिप्पणी:</b> <i>{latestRemark}</i>
+                    </p>
+                  )}
 
-                <textarea
-                  style={textarea}
-                  placeholder="यहाँ टिप्पणी लिखें..."
-                  value={remarks[c.complaintId] || ""}
-                  onChange={(e) =>
-                    setRemarks((prev) => ({
-                      ...prev,
-                      [c.complaintId]: e.target.value,
-                    }))
-                  }
-                />
+                  {/* टिप्पणी input */}
+                  <textarea
+                    style={textarea}
+                    placeholder="यहाँ टिप्पणी लिखें..."
+                    value={remarks[c.complaintId] || ""}
+                    onChange={(e) =>
+                      setRemarks((prev) => ({
+                        ...prev,
+                        [c.complaintId]: e.target.value,
+                      }))
+                    }
+                  />
 
-                {/* ✅ SUPPORTING DOCS INPUT */}
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) =>
-                    handleSupportDocs(c.complaintId, e.target.files)
-                  }
-                />
+                  {/* supporting docs upload */}
+                  <input
+                    type="file"
+                    multiple
+                    ref={(el) => (fileInputRefs.current[c.complaintId] = el)}
+                    onChange={(e) =>
+                      handleSupportDocs(c.complaintId, e.target.files)
+                    }
+                  />
 
-                <div style={{ marginTop: 10 }}>
-                  <button
-                    style={btnYellow}
-                    disabled={actionLoading}
-                    onClick={() => updateStatus(c.complaintId, "प्रक्रिया में")}
-                  >
-                    <FaSpinner /> प्रक्रिया में
-                  </button>
+                  {supportDocs[c.complaintId]?.length > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      <b>Selected Supporting Documents:</b>
+                      {supportDocs[c.complaintId].map((file, idx) => (
+                        <div key={idx} style={{ display: "flex", gap: 8 }}>
+                          <span>{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeSupportDoc(c.complaintId, idx)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "red",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ❌
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                  <button
-                    style={btnGreen}
-                    disabled={actionLoading}
-                    onClick={() => updateStatus(c.complaintId, "निस्तारित")}
-                  >
-                    <FaCheckCircle /> निस्तारित
-                  </button>
+                  <div style={{ marginTop: 10 }}>
+                    <button
+                      style={btnYellow}
+                      disabled={actionLoading}
+                      onClick={() => updateStatus(c.complaintId, "प्रक्रिया में")}
+                    >
+                      <FaSpinner /> प्रक्रिया में
+                    </button>
+                    <button
+                      style={btnGreen}
+                      disabled={actionLoading}
+                      onClick={() => updateStatus(c.complaintId, "निस्तारित")}
+                    >
+                      <FaCheckCircle /> निस्तारित
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </main>
       </div>
 
-      {/* ===== FOOTER (UNCHANGED) ===== */}
+      {/* ================= FOOTER ================= */}
       <footer style={footerStyle}>
         <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
         <p style={{ margin: 0, fontSize: "0.75rem" }}>

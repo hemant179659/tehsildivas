@@ -21,6 +21,7 @@ const DEPARTMENT_CODES = {
 export default function DepartmentSignup() {
   const navigate = useNavigate();
 
+
   const [deptName, setDeptName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +65,7 @@ export default function DepartmentSignup() {
     }
 
     try {
-      await axios.post("/api/department/signup", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/department/signup`, {
         deptName,
         email,
         password,

@@ -2,7 +2,6 @@ import { Department, Project, Complaint } from "../models/department.model.mjs";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import dotenv from "dotenv";
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -49,79 +48,122 @@ export const departmentLogin = async (req, res) => {
 
 /* ================= COMPLAINT REGISTER ================= */
 export const registerComplaint = async (req, res) => {
-  const docs = [];
+  try {
+    const docs = [];
 
-  for (const file of req.files || []) {
-    const key = `complaints/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      })
-    );
-    docs.push({
-      key,
-      url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+    for (const file of req.files || []) {
+      const key = `complaints/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        })
+      );
+
+      docs.push({
+        key,
+        url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+      });
+    }
+
+    const complaint = new Complaint({
+      ...req.body,
+      documents: docs,
     });
-  }
 
-  const complaint = new Complaint({ ...req.body, documents: docs });
-  await complaint.save();
-  res.json({ complaintId: complaint.complaintId });
+    await complaint.save();
+    res.json({ complaintId: complaint.complaintId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Complaint registration failed" });
+  }
 };
 
-/* ================= GET COMPLAINTS ================= */
+/* ================= GET COMPLAINTS (FINAL FIX) ================= */
 export const getComplaintsByDepartment = async (req, res) => {
-  const { department, all } = req.query;
-  const filter = all === "true" ? {} : { department };
-  const complaints = await Complaint.find(filter).sort({ createdAt: -1 });
-  res.json({ complaints });
+  try {
+    const { department, tehsil, all } = req.query;
+
+    let filter = {};
+
+    if (all === "true") {
+      filter = {};
+    } else if (department) {
+      filter = { department };
+    } else if (tehsil) {
+      filter = { tehsil };
+    }
+
+    const complaints = await Complaint.find(filter).sort({ createdAt: -1 });
+    res.json({ complaints });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch complaints" });
+  }
 };
 
 /* ================= UPDATE STATUS ================= */
 export const updateComplaintStatus = async (req, res) => {
-  const { complaintId } = req.params;
-  const { status, remark, department } = req.body;
+  try {
+    const { complaintId } = req.params;
+    const { status, remark, department } = req.body;
 
-  const complaint = await Complaint.findOne({ complaintId });
-  if (!complaint) {
-    return res.status(404).json({ message: "Complaint not found" });
+    const complaint = await Complaint.findOne({ complaintId });
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    const supportDocs = [];
+
+    for (const file of req.files || []) {
+      const key = `complaint-supporting/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        })
+      );
+
+      supportDocs.push({
+        key,
+        url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+        uploadedBy: department,
+      });
+    }
+
+    complaint.status = status;
+    complaint.remarksHistory.push({ department, status, remark });
+
+    if (supportDocs.length) {
+      complaint.supportingDocuments.push(...supportDocs);
+    }
+
+    await complaint.save();
+    res.json({ message: "Status updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Status update failed" });
   }
-
-  const supportDocs = [];
-
-  for (const file of req.files || []) {
-    const key = `complaint-supporting/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      })
-    );
-    supportDocs.push({
-      key,
-      url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
-      uploadedBy: department,
-    });
-  }
-
-  complaint.status = status;
-  complaint.remarksHistory.push({ department, status, remark });
-  if (supportDocs.length) complaint.supportingDocuments.push(...supportDocs);
-
-  await complaint.save();
-  res.json({ message: "Status updated" });
 };
 
 /* ================= PUBLIC TRACK ================= */
 export const getComplaintStatus = async (req, res) => {
-  const complaint = await Complaint.findOne({
-    complaintId: req.params.complaintId,
-  });
-  if (!complaint) return res.status(404).json({ message: "Not found" });
-  res.json({ complaint });
+  try {
+    const complaint = await Complaint.findOne({
+      complaintId: req.params.complaintId,
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    res.json({ complaint });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch complaint status" });
+  }
 };

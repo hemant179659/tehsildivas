@@ -43,7 +43,7 @@ export default function DeptResetPassword() {
     setLoading(true);
     try {
       const res = await axios.post(
-        "/api/department/reset-password",
+        `${import.meta.env.VITE_API_URL}/department/reset-password`,
         { email, token, newPassword }
       );
 
