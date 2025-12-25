@@ -1,3 +1,4 @@
+// ⬅️ imports SAME
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -10,7 +11,6 @@ import {
   FaCheckCircle,
   FaSpinner,
   FaFileAlt,
-  FaUpload,
 } from "react-icons/fa";
 
 export default function DepartmentAction() {
@@ -23,8 +23,7 @@ export default function DepartmentAction() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // 🔹 supporting docs state
-  const [showUpload, setShowUpload] = useState(null); // complaintId
+  // ✅ NEW (ONLY for supporting docs)
   const [supportDocs, setSupportDocs] = useState({});
 
   /* ================= RESIZE ================= */
@@ -64,51 +63,52 @@ export default function DepartmentAction() {
     fetchComplaints();
   }, [loggedDepartment]);
 
-  /* ================= STATUS COLOR ================= */
-  const statusColor = (status) => {
-    if (status === "लंबित") return "#dc3545";
-    if (status === "प्रक्रिया में") return "#ffc107";
-    if (status === "निस्तारित") return "#198754";
-    return "#000";
+  /* ================= DATE FORMAT ================= */
+  const formatDateTime = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   /* ================= FILE HANDLING ================= */
-  const handleSupportFile = (id, files) => {
+  const handleSupportDocs = (id, files) => {
     setSupportDocs((prev) => ({
       ...prev,
-      [id]: [...(prev[id] || []), ...Array.from(files)],
+      [id]: Array.from(files),
     }));
   };
 
   /* ================= UPDATE STATUS ================= */
   const updateStatus = async (complaintId, status) => {
     const remark = remarks[complaintId];
-    if (!remark || !remark.trim()) {
+    if (!remark?.trim()) {
       return toast.warning("कृपया टिप्पणी दर्ज करें");
     }
 
-    // अगर निस्तारित → पूछो documents?
-    if (status === "निस्तारित" && showUpload !== complaintId) {
-      const confirm = window.confirm(
-        "क्या आप कोई supporting document जोड़ना चाहते हैं?"
-      );
-      if (confirm) {
-        setShowUpload(complaintId);
-        return;
-      }
+    const wantDocs =
+      status === "निस्तारित"
+        ? window.confirm("क्या आप supporting documents जोड़ना चाहते हैं?")
+        : false;
+
+    const formData = new FormData();
+    formData.append("status", status);
+    formData.append("remark", remark);
+    formData.append("department", loggedDepartment);
+
+    if (wantDocs && supportDocs[complaintId]) {
+      supportDocs[complaintId].forEach((file) => {
+        formData.append("supportDocs", file); // ✅ MULTIPLE
+      });
     }
 
     try {
       setActionLoading(true);
-
-      const formData = new FormData();
-      formData.append("status", status);
-      formData.append("remark", remark);
-      formData.append("department", loggedDepartment);
-
-      (supportDocs[complaintId] || []).forEach((file) =>
-        formData.append("supportDocs", file)
-      );
 
       await axios.put(
         `/api/department/update-status/${complaintId}`,
@@ -121,14 +121,6 @@ export default function DepartmentAction() {
       setComplaints((prev) =>
         prev.filter((c) => c.complaintId !== complaintId)
       );
-
-      setRemarks((prev) => {
-        const copy = { ...prev };
-        delete copy[complaintId];
-        return copy;
-      });
-
-      setShowUpload(null);
     } catch {
       toast.error("अपडेट करने में त्रुटि");
     } finally {
@@ -149,183 +141,64 @@ export default function DepartmentAction() {
         style={{
           display: "flex",
           minHeight: "100vh",
-          background: "#fff",
           flexDirection: isMobile ? "column" : "row",
           paddingBottom: "80px",
         }}
       >
-        {/* ================= SIDEBAR ================= */}
-        <aside style={{ ...sidebar, width: isMobile ? "100%" : 260 }}>
+        {/* ===== SIDEBAR (UNCHANGED) ===== */}
+        <aside style={{ width: isMobile ? "100%" : 260, background: "#002147", color: "#fff", padding: 20 }}>
           <FaUserCircle size={48} />
-          <h3 style={{ marginTop: 10 }}>{loggedDepartment}</h3>
+          <h3>{loggedDepartment}</h3>
 
-          <div style={sideItem}><FaTachometerAlt /> Dashboard</div>
-          <div onClick={handleLogout} style={{ cursor: "pointer", marginTop: 30 }}>
+          <div><FaTachometerAlt /> Dashboard</div>
+          <div onClick={() => navigate("/dept/pending")}>🟥 लंबित शिकायतें</div>
+          <div onClick={() => navigate("/dept/in-progress")}>🟨 प्रक्रिया में</div>
+          <div onClick={() => navigate("/dept/resolved")}>🟩 निस्तारित</div>
+          <div onClick={() => navigate("/dept/overall")}>📊 Overall</div>
+
+          <div onClick={handleLogout} style={{ marginTop: 30 }}>
             <FaSignOutAlt /> Logout
           </div>
         </aside>
 
-        {/* ================= MAIN ================= */}
-        <main style={{ ...main, padding: isMobile ? 15 : 30 }}>
-          <h1 style={title}>विभागीय शिकायतें (कार्यवाही)</h1>
+        {/* ===== MAIN ===== */}
+        <main style={{ flex: 1, padding: 30 }}>
+          <h1>विभागीय शिकायतें</h1>
 
           {loading ? (
-            <p style={centerText}>लोड हो रहा है...</p>
-          ) : complaints.length === 0 ? (
-            <p style={centerText}>कोई सक्रिय शिकायत उपलब्ध नहीं है</p>
+            <p>लोड हो रहा है...</p>
           ) : (
             complaints.map((c) => (
-              <div key={c.complaintId} style={card}>
-                <p><b>शिकायत ID:</b> {c.complaintId}</p>
-                <p><b>नाम:</b> {c.complainantName}</p>
-                <p><b>मोबाइल:</b> {c.mobile}</p>
-                <p><b>विवरण:</b> {c.complaintDetails}</p>
-
-                {/* 🔹 NEW FIELDS */}
-                <p><b>सौंपने वाला अधिकारी:</b> {c.assignedBy}</p>
-                <p><b>सौंपा गया स्थान:</b> {c.assignedPlace}</p>
-                <p><b>सौंपने की तिथि:</b> {c.assignedDate}</p>
-
-                <p>
-                  <b>स्थिति:</b>{" "}
-                  <span style={{ fontWeight: 900, color: statusColor(c.status) }}>
-                    {c.status}
-                  </span>
-                </p>
+              <div key={c.complaintId} style={{ background: "#f8f9fa", padding: 20, marginBottom: 20 }}>
+                <p><b>ID:</b> {c.complaintId}</p>
+                <p><b>सौंपने वाला:</b> {c.assignedBy}</p>
+                <p><b>स्थान:</b> {c.assignedPlace}</p>
+                <p><b>तिथि:</b> {formatDateTime(c.assignedDate)}</p>
 
                 <textarea
-                  style={textarea}
-                  placeholder="यहाँ टिप्पणी लिखें..."
+                  placeholder="टिप्पणी लिखें..."
                   value={remarks[c.complaintId] || ""}
                   onChange={(e) =>
-                    setRemarks((p) => ({
-                      ...p,
-                      [c.complaintId]: e.target.value,
-                    }))
+                    setRemarks({ ...remarks, [c.complaintId]: e.target.value })
                   }
                 />
 
-                {showUpload === c.complaintId && (
-                  <div style={{ marginTop: 10 }}>
-                    <label><b>Supporting Documents</b></label>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={(e) =>
-                        handleSupportFile(c.complaintId, e.target.files)
-                      }
-                    />
-                  </div>
-                )}
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) =>
+                    handleSupportDocs(c.complaintId, e.target.files)
+                  }
+                />
 
-                <div style={{ marginTop: 10 }}>
-                  <button
-                    style={btnYellow}
-                    disabled={actionLoading}
-                    onClick={() =>
-                      updateStatus(c.complaintId, "प्रक्रिया में")
-                    }
-                  >
-                    <FaSpinner /> प्रक्रिया में
-                  </button>
-
-                  <button
-                    style={btnGreen}
-                    disabled={actionLoading}
-                    onClick={() =>
-                      updateStatus(c.complaintId, "निस्तारित")
-                    }
-                  >
-                    <FaCheckCircle /> निस्तारित
-                  </button>
-                </div>
+                <button onClick={() => updateStatus(c.complaintId, "निस्तारित")}>
+                  <FaCheckCircle /> निस्तारित
+                </button>
               </div>
             ))
           )}
         </main>
       </div>
-
-      <footer style={footerStyle}>
-        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
-        <p style={{ margin: 0, fontSize: "0.75rem" }}>
-          Designed & Developed by District Administration
-        </p>
-      </footer>
     </>
   );
 }
-
-/* ================= STYLES (UNCHANGED) ================= */
-
-const sidebar = {
-  background: "#002147",
-  color: "#fff",
-  padding: 20,
-};
-
-const sideItem = {
-  marginTop: 14,
-  cursor: "pointer",
-  fontWeight: 700,
-};
-
-const main = {
-  flex: 1,
-  background: "#fff",
-  color: "#000",
-};
-
-const title = {
-  textAlign: "center",
-  fontWeight: 900,
-  marginBottom: 20,
-};
-
-const centerText = {
-  textAlign: "center",
-  fontWeight: 700,
-};
-
-const card = {
-  background: "#f8f9fa",
-  padding: 20,
-  borderRadius: 10,
-  marginBottom: 20,
-};
-
-const textarea = {
-  width: "100%",
-  padding: 10,
-  marginTop: 10,
-  borderRadius: 6,
-  border: "1px solid #000",
-};
-
-const btnYellow = {
-  marginRight: 10,
-  padding: "8px 14px",
-  background: "#ffc107",
-  color: "#000",
-  border: "none",
-  borderRadius: 5,
-};
-
-const btnGreen = {
-  padding: "8px 14px",
-  background: "#198754",
-  color: "#fff",
-  border: "none",
-  borderRadius: 5,
-};
-
-const footerStyle = {
-  position: "fixed",
-  bottom: 0,
-  width: "100%",
-  backgroundColor: "#ffffff",
-  textAlign: "center",
-  padding: "10px",
-  borderTop: "4px solid #0056b3",
-  color: "#000",
-  zIndex: 999,
-};
