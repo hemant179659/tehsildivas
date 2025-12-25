@@ -1,4 +1,3 @@
-// ⬅️ imports SAME
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -23,7 +22,7 @@ export default function DepartmentAction() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // ✅ NEW (ONLY for supporting docs)
+  // ✅ ONLY ADDITION
   const [supportDocs, setSupportDocs] = useState({});
 
   /* ================= RESIZE ================= */
@@ -63,8 +62,17 @@ export default function DepartmentAction() {
     fetchComplaints();
   }, [loggedDepartment]);
 
-  /* ================= DATE FORMAT ================= */
+  /* ================= STATUS COLOR ================= */
+  const statusColor = (status) => {
+    if (status === "लंबित") return "#dc3545";
+    if (status === "प्रक्रिया में") return "#ffc107";
+    if (status === "निस्तारित") return "#198754";
+    return "#000";
+  };
+
+  /* ================= DATE FORMAT (ONLY DISPLAY) ================= */
   const formatDateTime = (dateStr) => {
+    if (!dateStr) return "";
     const d = new Date(dateStr);
     return d.toLocaleString("en-IN", {
       day: "2-digit",
@@ -76,7 +84,7 @@ export default function DepartmentAction() {
     });
   };
 
-  /* ================= FILE HANDLING ================= */
+  /* ================= SUPPORT DOC HANDLER ================= */
   const handleSupportDocs = (id, files) => {
     setSupportDocs((prev) => ({
       ...prev,
@@ -87,28 +95,28 @@ export default function DepartmentAction() {
   /* ================= UPDATE STATUS ================= */
   const updateStatus = async (complaintId, status) => {
     const remark = remarks[complaintId];
-    if (!remark?.trim()) {
+    if (!remark || !remark.trim()) {
       return toast.warning("कृपया टिप्पणी दर्ज करें");
     }
 
     const wantDocs =
       status === "निस्तारित"
-        ? window.confirm("क्या आप supporting documents जोड़ना चाहते हैं?")
+        ? window.confirm("क्या आप कोई supporting document जोड़ना चाहते हैं?")
         : false;
-
-    const formData = new FormData();
-    formData.append("status", status);
-    formData.append("remark", remark);
-    formData.append("department", loggedDepartment);
-
-    if (wantDocs && supportDocs[complaintId]) {
-      supportDocs[complaintId].forEach((file) => {
-        formData.append("supportDocs", file); // ✅ MULTIPLE
-      });
-    }
 
     try {
       setActionLoading(true);
+
+      const formData = new FormData();
+      formData.append("status", status);
+      formData.append("remark", remark);
+      formData.append("department", loggedDepartment);
+
+      if (wantDocs && supportDocs[complaintId]) {
+        supportDocs[complaintId].forEach((file) => {
+          formData.append("supportDocs", file); // ✅ MULTIPLE
+        });
+      }
 
       await axios.put(
         `/api/department/update-status/${complaintId}`,
@@ -121,6 +129,12 @@ export default function DepartmentAction() {
       setComplaints((prev) =>
         prev.filter((c) => c.complaintId !== complaintId)
       );
+
+      setRemarks((prev) => {
+        const copy = { ...prev };
+        delete copy[complaintId];
+        return copy;
+      });
     } catch {
       toast.error("अपडेट करने में त्रुटि");
     } finally {
@@ -141,48 +155,82 @@ export default function DepartmentAction() {
         style={{
           display: "flex",
           minHeight: "100vh",
+          background: "#fff",
           flexDirection: isMobile ? "column" : "row",
           paddingBottom: "80px",
         }}
       >
-        {/* ===== SIDEBAR (UNCHANGED) ===== */}
-        <aside style={{ width: isMobile ? "100%" : 260, background: "#002147", color: "#fff", padding: 20 }}>
+        {/* ================= SIDEBAR (UNCHANGED) ================= */}
+        <aside style={{ ...sidebar, width: isMobile ? "100%" : 260 }}>
           <FaUserCircle size={48} />
-          <h3>{loggedDepartment}</h3>
+          <h3 style={{ marginTop: 10 }}>{loggedDepartment}</h3>
 
-          <div><FaTachometerAlt /> Dashboard</div>
-          <div onClick={() => navigate("/dept/pending")}>🟥 लंबित शिकायतें</div>
-          <div onClick={() => navigate("/dept/in-progress")}>🟨 प्रक्रिया में</div>
-          <div onClick={() => navigate("/dept/resolved")}>🟩 निस्तारित</div>
-          <div onClick={() => navigate("/dept/overall")}>📊 Overall</div>
+          <div style={sideItem}><FaTachometerAlt /> Dashboard</div>
+          <div style={sideItem} onClick={() => navigate("/dept/pending")}>🟥 लंबित शिकायतें</div>
+          <div style={sideItem} onClick={() => navigate("/dept/in-progress")}>🟨 प्रक्रिया में शिकायतें</div>
+          <div style={sideItem} onClick={() => navigate("/dept/resolved")}>🟩 निस्तारित शिकायतें</div>
+          <div style={sideItem} onClick={() => navigate("/dept/overall")}>📊 Overall Status</div>
 
-          <div onClick={handleLogout} style={{ marginTop: 30 }}>
+          <div onClick={handleLogout} style={{ cursor: "pointer", marginTop: 30 }}>
             <FaSignOutAlt /> Logout
           </div>
         </aside>
 
-        {/* ===== MAIN ===== */}
-        <main style={{ flex: 1, padding: 30 }}>
-          <h1>विभागीय शिकायतें</h1>
+        {/* ================= MAIN ================= */}
+        <main style={{ ...main, padding: isMobile ? 15 : 30 }}>
+          <h1 style={title}>विभागीय शिकायतें (कार्यवाही)</h1>
 
           {loading ? (
-            <p>लोड हो रहा है...</p>
+            <p style={centerText}>लोड हो रहा है...</p>
+          ) : complaints.length === 0 ? (
+            <p style={centerText}>कोई सक्रिय शिकायत उपलब्ध नहीं है</p>
           ) : (
             complaints.map((c) => (
-              <div key={c.complaintId} style={{ background: "#f8f9fa", padding: 20, marginBottom: 20 }}>
-                <p><b>ID:</b> {c.complaintId}</p>
-                <p><b>सौंपने वाला:</b> {c.assignedBy}</p>
-                <p><b>स्थान:</b> {c.assignedPlace}</p>
-                <p><b>तिथि:</b> {formatDateTime(c.assignedDate)}</p>
+              <div key={c.complaintId} style={card}>
+                <p><b>शिकायत ID:</b> {c.complaintId}</p>
+                <p><b>नाम:</b> {c.complainantName}</p>
+                <p><b>मोबाइल:</b> {c.mobile}</p>
+                <p><b>विवरण:</b> {c.complaintDetails}</p>
+
+                {/* ✅ REQUIRED 3 FIELDS */}
+                <p><b>सौंपने वाला अधिकारी:</b> {c.assignedBy}</p>
+                <p><b>सौंपा गया स्थान:</b> {c.assignedPlace}</p>
+                <p><b>सौंपी गई तिथि:</b> {formatDateTime(c.assignedDate)}</p>
+
+                {c.documents?.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <b>संलग्न दस्तावेज़:</b>
+                    {c.documents.map((doc, idx) => (
+                      <div key={idx} style={docRow}>
+                        <FaFileAlt />
+                        <a href={doc.url} target="_blank" rel="noreferrer" style={docLink}>
+                          दस्तावेज़ {idx + 1}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p style={{ marginTop: 10 }}>
+                  <b>स्थिति:</b>{" "}
+                  <span style={{ fontWeight: 900, color: statusColor(c.status) }}>
+                    {c.status}
+                  </span>
+                </p>
 
                 <textarea
-                  placeholder="टिप्पणी लिखें..."
+                  style={textarea}
+                  placeholder="यहाँ टिप्पणी लिखें..."
                   value={remarks[c.complaintId] || ""}
                   onChange={(e) =>
-                    setRemarks({ ...remarks, [c.complaintId]: e.target.value })
+                    setRemarks((prev) => ({
+                      ...prev,
+                      [c.complaintId]: e.target.value,
+                    }))
                   }
                 />
 
+                {/* ✅ SUPPORTING DOCS INPUT */}
                 <input
                   type="file"
                   multiple
@@ -191,14 +239,123 @@ export default function DepartmentAction() {
                   }
                 />
 
-                <button onClick={() => updateStatus(c.complaintId, "निस्तारित")}>
-                  <FaCheckCircle /> निस्तारित
-                </button>
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    style={btnYellow}
+                    disabled={actionLoading}
+                    onClick={() => updateStatus(c.complaintId, "प्रक्रिया में")}
+                  >
+                    <FaSpinner /> प्रक्रिया में
+                  </button>
+
+                  <button
+                    style={btnGreen}
+                    disabled={actionLoading}
+                    onClick={() => updateStatus(c.complaintId, "निस्तारित")}
+                  >
+                    <FaCheckCircle /> निस्तारित
+                  </button>
+                </div>
               </div>
             ))
           )}
         </main>
       </div>
+
+      {/* ===== FOOTER (UNCHANGED) ===== */}
+      <footer style={footerStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
+        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+          Designed & Developed by District Administration
+        </p>
+      </footer>
     </>
   );
 }
+
+/* ================= STYLES (UNCHANGED) ================= */
+
+const sidebar = {
+  background: "#002147",
+  color: "#fff",
+  padding: 20,
+};
+
+const sideItem = {
+  marginTop: 14,
+  cursor: "pointer",
+  fontWeight: 700,
+};
+
+const main = {
+  flex: 1,
+  background: "#fff",
+  color: "#000",
+};
+
+const title = {
+  textAlign: "center",
+  fontWeight: 900,
+  marginBottom: 20,
+};
+
+const centerText = {
+  textAlign: "center",
+  fontWeight: 700,
+};
+
+const card = {
+  background: "#f8f9fa",
+  padding: 20,
+  borderRadius: 10,
+  marginBottom: 20,
+};
+
+const textarea = {
+  width: "100%",
+  padding: 10,
+  marginTop: 10,
+  borderRadius: 6,
+  border: "1px solid #000",
+};
+
+const btnYellow = {
+  marginRight: 10,
+  padding: "8px 14px",
+  background: "#ffc107",
+  color: "#000",
+  border: "none",
+  borderRadius: 5,
+};
+
+const btnGreen = {
+  padding: "8px 14px",
+  background: "#198754",
+  color: "#fff",
+  border: "none",
+  borderRadius: 5,
+};
+
+const docRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  marginTop: 4,
+};
+
+const docLink = {
+  color: "#0d6efd",
+  textDecoration: "underline",
+};
+
+const footerStyle = {
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#ffffff",
+  textAlign: "center",
+  padding: "10px",
+  borderTop: "4px solid #0056b3",
+  color: "#000",
+  zIndex: 999,
+};
