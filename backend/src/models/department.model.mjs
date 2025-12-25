@@ -5,22 +5,9 @@ import mongoose from "mongoose";
 ========================= */
 const departmentSchema = new mongoose.Schema(
   {
-    deptName: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
+    deptName: { type: String, required: true, unique: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
     resetToken: String,
     resetTokenExpiry: Date,
   },
@@ -53,11 +40,6 @@ const projectSchema = new mongoose.Schema(
         uploadedAt: { type: Date, default: Date.now },
       },
     ],
-
-    geoLocation: {
-      lat: Number,
-      lng: Number,
-    },
   },
   { timestamps: true }
 );
@@ -65,16 +47,11 @@ const projectSchema = new mongoose.Schema(
 const Project = mongoose.model("Project", projectSchema);
 
 /* =========================
-   COMPLAINT SCHEMA (FINAL)
+   COMPLAINT SCHEMA
 ========================= */
 const complaintSchema = new mongoose.Schema(
   {
-    complaintId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
+    complaintId: { type: String, required: true, unique: true, index: true },
 
     complainantName: { type: String, required: true },
     guardianName: { type: String, required: true },
@@ -88,10 +65,21 @@ const complaintSchema = new mongoose.Schema(
 
     complaintDetails: { type: String, required: true },
 
+    /* OPERATOR DOCUMENTS */
     documents: [
       {
         url: String,
         key: String,
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    /* DEPARTMENT SUPPORTING DOCUMENTS */
+    supportingDocuments: [
+      {
+        url: String,
+        key: String,
+        uploadedBy: String,
         uploadedAt: { type: Date, default: Date.now },
       },
     ],
@@ -101,27 +89,18 @@ const complaintSchema = new mongoose.Schema(
     assignedDate: { type: Date, required: true },
     department: { type: String, required: true },
 
-    /* ===== CURRENT STATUS ===== */
     status: {
       type: String,
       enum: ["लंबित", "प्रक्रिया में", "निस्तारित"],
       default: "लंबित",
     },
 
-    /* ===== REMARKS HISTORY ===== */
     remarksHistory: [
       {
-        department: { type: String, required: true },
-        status: {
-          type: String,
-          enum: ["प्रक्रिया में", "निस्तारित"],
-          required: true,
-        },
-        remark: { type: String, required: true },
-        actionDate: {
-          type: Date,
-          default: Date.now,
-        },
+        department: String,
+        status: String,
+        remark: String,
+        actionDate: { type: Date, default: Date.now },
       },
     ],
   },
