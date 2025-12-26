@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import BackButton from "./BackButton";
 import backgroundImage from "../assets/login.jpg";
@@ -14,6 +14,7 @@ export default function DepartmentLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [lang, setLang] = useState("hi");
 
   /* ================= RESIZE ================= */
   useEffect(() => {
@@ -33,7 +34,11 @@ export default function DepartmentLogin() {
   /* ================= LOGIN ================= */
   const handleLogin = async () => {
     if (!email || !password) {
-      return toast.error("कृपया ईमेल और पासवर्ड दर्ज करें");
+      return toast.error(
+        lang === "hi"
+          ? "कृपया ईमेल और पासवर्ड दर्ज करें"
+          : "Please enter email and password"
+      );
     }
 
     try {
@@ -43,94 +48,166 @@ export default function DepartmentLogin() {
       );
 
       localStorage.setItem("loggedInDepartment", res.data.deptName);
-      toast.success("लॉगिन सफल!");
+      toast.success(lang === "hi" ? "लॉगिन सफल!" : "Login successful!");
 
       setTimeout(() => {
         navigate("/department-complaints", { replace: true });
       }, 1200);
     } catch (err) {
-      toast.error(err.response?.data?.message || "लॉगिन विफल");
+      toast.error(
+        err.response?.data?.message ||
+          (lang === "hi" ? "लॉगिन विफल" : "Login failed")
+      );
     }
   };
 
   return (
-    <div style={pageWrapper}>
+    <div style={pageWrapper} lang={lang}>
       <ToastContainer autoClose={2000} position="top-right" />
 
-      {/* LEFT IMAGE (DESKTOP ONLY) */}
-      {!isMobile && (
-        <div style={leftSection}>
-          <div style={leftImage} />
-          <div style={overlay} />
-          <BackButton onClick={() => navigate("/", { replace: true })} />
-        </div>
-      )}
+      {/* ================= SKIP LINK ================= */}
+      <a href="#main-content" style={skipLink}>
+        {lang === "hi" ? "मुख्य सामग्री पर जाएँ" : "Skip to main content"}
+      </a>
 
-      {/* RIGHT FORM */}
-      <div style={rightSection}>
-        <div style={loginBox}>
-          <h2 style={title}>विभाग लॉगिन</h2>
-
-          <input
-            style={input}
-            type="email"
-            placeholder="ईमेल"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <input
-            style={input}
-            type="password"
-            placeholder="पासवर्ड"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <button style={loginBtn} onClick={handleLogin}>
-            लॉगिन करें
-          </button>
-
-          <div style={linkGroup}>
-            <button style={secondaryBtn} onClick={() => navigate("/dept-signup")}>
-              नया पंजीकरण
-            </button>
-
-            <button
-              style={secondaryBtn}
-              onClick={() => navigate("/dept-forgot")}
-            >
-              पासवर्ड भूल गए?
-            </button>
-          </div>
-        </div>
+      {/* ================= LANGUAGE TOGGLE ================= */}
+      <div style={langToggle}>
+        <button onClick={() => setLang("hi")} style={langBtn(lang === "hi")}>
+          हिंदी
+        </button>
+        <button onClick={() => setLang("en")} style={langBtn(lang === "en")}>
+          EN
+        </button>
       </div>
 
-      {/* FOOTER */}
+      {/* ================= MAIN CONTENT ================= */}
+      <div style={contentWrapper}>
+        {!isMobile && (
+          <aside style={leftSection} aria-hidden="true">
+            <div style={leftImage} />
+            <div style={overlay} />
+            <BackButton onClick={() => navigate("/", { replace: true })} />
+          </aside>
+        )}
+
+        <main id="main-content" style={rightSection} role="main">
+          <section style={loginBox}>
+            <h1 style={title}>
+              {lang === "hi" ? "विभाग लॉगिन" : "Department Login"}
+            </h1>
+
+            <label style={label}>
+              {lang === "hi" ? "ईमेल" : "Email"}
+            </label>
+            <input
+              style={input}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <label style={label}>
+              {lang === "hi" ? "पासवर्ड" : "Password"}
+            </label>
+            <input
+              style={input}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <button style={loginBtn} onClick={handleLogin}>
+              {lang === "hi" ? "लॉगिन करें" : "Login"}
+            </button>
+
+            <div style={linkGroup}>
+              <button
+                style={secondaryBtn}
+                onClick={() => navigate("/dept-signup")}
+              >
+                {lang === "hi" ? "नया पंजीकरण" : "New Registration"}
+              </button>
+
+              <button
+                style={secondaryBtn}
+                onClick={() => navigate("/dept-forgot")}
+              >
+                {lang === "hi" ? "पासवर्ड भूल गए?" : "Forgot Password?"}
+              </button>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      {/* ================= FOOTER ================= */}
       <footer style={footerStyle}>
-        <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
-        <p style={{ margin: 0, fontSize: "0.75rem" }}>
+        <p style={{ margin: 0, fontWeight: 700 }}>
+          {lang === "hi"
+            ? "जिला प्रशासन, उत्तराखंड"
+            : "District Administration, Uttarakhand"}
+        </p>
+        <p style={{ margin: "4px 0", fontSize: "0.8rem" }}>
           Designed & Developed by District Administration
         </p>
+
+        <nav>
+          <ul style={footerLinks}>
+            <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+            <li><Link to="/terms">Terms & Conditions</Link></li>
+            <li><Link to="/accessibility">Accessibility</Link></li>
+            <li><Link to="/contact">Contact Us</Link></li>
+          </ul>
+        </nav>
       </footer>
     </div>
   );
 }
 
-/* ================= STYLES ================= */
+/* ===================== STYLES ===================== */
 
 const pageWrapper = {
   minHeight: "100vh",
   display: "flex",
-  flexDirection: "row",
-  position: "relative",
+  flexDirection: "column",
   backgroundColor: "#f4f6f9",
 };
+
+const contentWrapper = {
+  flex: 1,
+  display: "flex",
+};
+
+const skipLink = {
+  position: "absolute",
+  top: "-40px",
+  left: "10px",
+  background: "#000",
+  color: "#fff",
+  padding: "6px 10px",
+  zIndex: 1000,
+};
+
+const langToggle = {
+  position: "absolute",
+  top: "10px",
+  right: "10px",
+  display: "flex",
+  gap: "6px",
+};
+
+const langBtn = (active) => ({
+  padding: "5px 9px",
+  border: "1px solid #0056b3",
+  backgroundColor: active ? "#0056b3" : "#ffffff",
+  color: active ? "#ffffff" : "#0056b3",
+  fontSize: "0.8rem",
+  fontWeight: 600,
+  cursor: "pointer",
+});
 
 const leftSection = {
   flex: 1,
   position: "relative",
-  overflow: "hidden",
 };
 
 const leftImage = {
@@ -139,14 +216,12 @@ const leftImage = {
   backgroundImage: `url(${backgroundImage})`,
   backgroundSize: "cover",
   backgroundPosition: "center",
-  zIndex: 1,
 };
 
 const overlay = {
   position: "absolute",
   inset: 0,
-  backgroundColor: "rgba(0,0,0,0.35)", // 👈 only overlay faded
-  zIndex: 2,
+  backgroundColor: "rgba(0,0,0,0.25)",
 };
 
 const rightSection = {
@@ -154,72 +229,88 @@ const rightSection = {
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: 20,
   backgroundColor: "#ffffff",
-  zIndex: 3,
 };
 
 const loginBox = {
   width: "100%",
   maxWidth: 380,
-  background: "#fff",
-  padding: 30,
-  borderRadius: 10,
-  boxShadow: "0 6px 18px rgba(0,0,0,0.2)",
+  background: "#ffffff",
+  padding: 26,
+  borderRadius: 8,
+  boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
 };
 
 const title = {
   textAlign: "center",
-  marginBottom: 22,
-  fontWeight: 900,
+  marginBottom: 18,
+  fontSize: "1.1rem",   // 🔼 slightly bigger
+  fontWeight: 700,
+  color: "#000",
+};
+
+const label = {
+  marginBottom: 4,
+  fontWeight: 500,
+  fontSize: "0.85rem",  // 🔼 slightly bigger
   color: "#000",
 };
 
 const input = {
   width: "100%",
-  padding: 12,
+  padding: 11,          // 🔼 slightly bigger
   marginBottom: 14,
   borderRadius: 6,
-  border: "2px solid #000",
-  fontWeight: 600,
+  border: "1px solid #000",
+  fontSize: "0.95rem",  // 🔼 slightly bigger
+  fontWeight: 500,
+  color: "#000",
 };
 
 const loginBtn = {
   width: "100%",
-  padding: 12,
+  padding: 11,
   backgroundColor: "#0056b3",
   color: "#fff",
   border: "none",
   borderRadius: 6,
-  fontWeight: 700,
+  fontSize: "0.95rem",
+  fontWeight: 600,
   cursor: "pointer",
 };
 
 const linkGroup = {
   display: "flex",
   flexDirection: "column",
-  gap: 10,
+  gap: 9,
   marginTop: 14,
 };
 
 const secondaryBtn = {
-  padding: 10,
+  padding: 9,
   backgroundColor: "#e9ecef",
   color: "#000",
   border: "1px solid #000",
   borderRadius: 6,
-  fontWeight: 600,
+  fontSize: "0.85rem",
+  fontWeight: 500,
   cursor: "pointer",
 };
 
 const footerStyle = {
-  position: "fixed",
-  bottom: 0,
-  width: "100%",
   backgroundColor: "#ffffff",
   textAlign: "center",
-  padding: "10px",
+  padding: "14px 10px",
   borderTop: "4px solid #0056b3",
   color: "#000",
-  zIndex: 5,
+};
+
+const footerLinks = {
+  listStyle: "none",
+  padding: 0,
+  margin: "8px 0 0",
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "12px",
+  justifyContent: "center",
 };

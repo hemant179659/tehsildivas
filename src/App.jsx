@@ -7,6 +7,10 @@ import Home from "./components/home";
 import DataEntryLogin from "./components/operatorlogin";
 import ComplaintRegister from "./components/operatordashboard";
 import RegisteredComplaints from "./components/RegisteredComplaints";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import Accessibility from "./components/Accessibility";
+import TermsConditions from "./components/TermsConditions";
+import ContactUs from "./components/ContactUs";
 
 /* ================= ADMIN ================= */
 import AdminDashboard from "./components/AdminDashboard";
@@ -57,8 +61,10 @@ export default function App() {
         <Route
           path="/registered-complaints"
           element={<RegisteredComplaints />}
-        />
 
+        />
+  <Route path="/terms" element={<TermsConditions />} />
+  <Route path="/contact" element={<ContactUs />} />
         {/* ================= ADMIN ================= */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
          <Route path="/admin-login" element={<AdminLogin />} />
@@ -77,6 +83,8 @@ export default function App() {
         <Route path="/dept-signup" element={<DepartmentSignup />} />
         <Route path="/dept-forgot" element={<DepartmentForgot />} />
         <Route path="/dept-verify" element={<Verification />} />
+           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+  <Route path="/accessibility" element={<Accessibility />} />
         <Route
           path="/dept-reset-password"
           element={<DeptResetPassword />}

@@ -2,16 +2,22 @@ import { useState } from "react";
 import axios from "axios";
 import { FaSearch, FaFileAlt } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
+import { Link } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function ComplaintStatus() {
   const [complaintId, setComplaintId] = useState("");
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState("hi"); // hi | en
 
   const fetchStatus = async () => {
     if (!complaintId.trim()) {
-      return toast.warning("कृपया शिकायत ID दर्ज करें");
+      return toast.warning(
+        lang === "hi"
+          ? "कृपया शिकायत ID दर्ज करें"
+          : "Please enter Complaint ID"
+      );
     }
 
     try {
@@ -24,16 +30,19 @@ export default function ComplaintStatus() {
 
       setComplaint(res.data.complaint);
     } catch (err) {
-      toast.error(err.response?.data?.message || "शिकायत नहीं मिली");
+      toast.error(
+        err.response?.data?.message ||
+          (lang === "hi" ? "शिकायत नहीं मिली" : "Complaint not found")
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const statusColor = (status) => {
-    if (status === "लंबित") return "#b02a37";
-    if (status === "प्रक्रिया में") return "#b58105";
-    if (status === "निस्तारित") return "#146c43";
+    if (status === "लंबित" || status === "Pending") return "#b02a37";
+    if (status === "प्रक्रिया में" || status === "In Progress") return "#b58105";
+    if (status === "निस्तारित" || status === "Resolved") return "#146c43";
     return "#000";
   };
 
@@ -41,36 +50,83 @@ export default function ComplaintStatus() {
     <>
       <ToastContainer autoClose={2000} />
 
-      <div style={pageWrapper}>
-        {/* ================= CONTENT ================= */}
-        <main style={contentWrapper}>
-          <h1 style={title}>शिकायत की स्थिति देखें</h1>
+      <div style={pageWrapper} lang={lang}>
+        {/* ================= SKIP LINK ================= */}
+        <a href="#main-content" style={skipLink}>
+          {lang === "hi" ? "मुख्य सामग्री पर जाएँ" : "Skip to main content"}
+        </a>
+
+        {/* ================= LANGUAGE TOGGLE ================= */}
+        <div style={langToggle}>
+          <button onClick={() => setLang("hi")} style={langBtn(lang === "hi")}>
+            हिंदी
+          </button>
+          <button onClick={() => setLang("en")} style={langBtn(lang === "en")}>
+            EN
+          </button>
+        </div>
+
+        {/* ================= MAIN ================= */}
+        <main id="main-content" style={contentWrapper} role="main">
+          <h1 style={title}>
+            {lang === "hi" ? "शिकायत की स्थिति देखें" : "Check Complaint Status"}
+          </h1>
 
           {/* SEARCH */}
           <div style={searchBox}>
+            <label htmlFor="complaintId" style={srOnly}>
+              {lang === "hi" ? "शिकायत ID" : "Complaint ID"}
+            </label>
             <input
+              id="complaintId"
               style={input}
-              placeholder="शिकायत ID दर्ज करें"
+              placeholder={
+                lang === "hi" ? "शिकायत ID दर्ज करें" : "Enter Complaint ID"
+              }
               value={complaintId}
               onChange={(e) => setComplaintId(e.target.value)}
             />
-            <button style={searchBtn} onClick={fetchStatus} disabled={loading}>
-              <FaSearch /> खोजें
+            <button
+              style={searchBtn}
+              onClick={fetchStatus}
+              disabled={loading}
+            >
+              <FaSearch />{" "}
+              {lang === "hi" ? "खोजें" : "Search"}
             </button>
           </div>
 
-          {loading && <p style={center}>लोड हो रहा है...</p>}
+          {loading && (
+            <p style={center}>
+              {lang === "hi" ? "लोड हो रहा है..." : "Loading..."}
+            </p>
+          )}
 
           {complaint && (
             <div style={card}>
-              <Info label="शिकायत ID" value={complaint.complaintId} />
-              <Info label="शिकायतकर्ता" value={complaint.complainantName} />
-              <Info label="मोबाइल" value={complaint.mobile} />
-              <Info label="पता" value={complaint.address} />
-              <Info label="विवरण" value={complaint.complaintDetails} />
+              <Info
+                label={lang === "hi" ? "शिकायत ID" : "Complaint ID"}
+                value={complaint.complaintId}
+              />
+              <Info
+                label={lang === "hi" ? "शिकायतकर्ता" : "Complainant"}
+                value={complaint.complainantName}
+              />
+              <Info
+                label={lang === "hi" ? "मोबाइल" : "Mobile"}
+                value={complaint.mobile}
+              />
+              <Info
+                label={lang === "hi" ? "पता" : "Address"}
+                value={complaint.address}
+              />
+              <Info
+                label={lang === "hi" ? "विवरण" : "Details"}
+                value={complaint.complaintDetails}
+              />
 
               <p style={row}>
-                <b>स्थिति:</b>{" "}
+                <b>{lang === "hi" ? "स्थिति" : "Status"}:</b>{" "}
                 <span
                   style={{
                     color: statusColor(complaint.status),
@@ -81,11 +137,13 @@ export default function ComplaintStatus() {
                 </span>
               </p>
 
-              {/* ========= LATEST REMARK ========= */}
+              {/* LATEST REMARK */}
               {complaint.remarksHistory?.length > 0 && (
                 <div style={remarkBox}>
                   <div style={{ fontWeight: 800, marginBottom: 6 }}>
-                    नवीनतम टिप्पणी
+                    {lang === "hi"
+                      ? "नवीनतम टिप्पणी"
+                      : "Latest Remark"}
                   </div>
                   <div style={{ fontWeight: 600 }}>
                     {
@@ -104,10 +162,14 @@ export default function ComplaintStatus() {
                 </div>
               )}
 
-              {/* ========= COMPLAINT DOCUMENTS ========= */}
+              {/* DOCUMENTS */}
               {complaint.documents?.length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <b>शिकायत के साथ संलग्न दस्तावेज़:</b>
+                  <b>
+                    {lang === "hi"
+                      ? "संलग्न दस्तावेज़"
+                      : "Attached Documents"}
+                  </b>
                   {complaint.documents.map((d, i) => (
                     <div key={i} style={docRow}>
                       <FaFileAlt />
@@ -117,27 +179,9 @@ export default function ComplaintStatus() {
                         rel="noreferrer"
                         style={docLink}
                       >
-                        दस्तावेज़ {i + 1}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* ========= DEPARTMENT SUPPORTING DOCUMENTS ========= */}
-              {complaint.supportingDocuments?.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <b>विभाग द्वारा संलग्न दस्तावेज़:</b>
-                  {complaint.supportingDocuments.map((d, i) => (
-                    <div key={i} style={docRow}>
-                      <FaFileAlt />
-                      <a
-                        href={d.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={docLink}
-                      >
-                        दस्तावेज़ {i + 1}
+                        {lang === "hi"
+                          ? `दस्तावेज़ ${i + 1}`
+                          : `Document ${i + 1}`}
                       </a>
                     </div>
                   ))}
@@ -147,12 +191,25 @@ export default function ComplaintStatus() {
           )}
         </main>
 
-        {/* ================= FOOTER ================= */}
-        <footer style={footerStyle}>
-          <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
-          <p style={{ margin: 0, fontSize: "0.75rem" }}>
+        {/* ================= FOOTER (HOME LIKE) ================= */}
+        <footer style={footerStyle} role="contentinfo">
+          <p style={{ margin: 0, fontWeight: 700 }}>
+            {lang === "hi"
+              ? "जिला प्रशासन, उत्तराखंड"
+              : "District Administration, Uttarakhand"}
+          </p>
+          <p style={{ margin: "4px 0", fontSize: "0.8rem" }}>
             Designed & Developed by District Administration
           </p>
+
+          <nav aria-label="Footer Navigation">
+            <ul style={footerLinks}>
+              <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+              <li><Link to="/terms">Terms & Conditions</Link></li>
+              <li><Link to="/accessibility">Accessibility</Link></li>
+              <li><Link to="/contact">Contact Us</Link></li>
+            </ul>
+          </nav>
         </footer>
       </div>
     </>
@@ -177,10 +234,38 @@ const pageWrapper = {
   backgroundColor: "#eef2f6",
 };
 
+const skipLink = {
+  position: "absolute",
+  top: "-40px",
+  left: "10px",
+  background: "#000",
+  color: "#fff",
+  padding: "8px 12px",
+  zIndex: 1000,
+  textDecoration: "none",
+};
+
+const langToggle = {
+  position: "absolute",
+  top: "10px",
+  right: "10px",
+  display: "flex",
+  gap: "6px",
+};
+
+const langBtn = (active) => ({
+  padding: "6px 10px",
+  border: "1px solid #0056b3",
+  backgroundColor: active ? "#0056b3" : "#ffffff",
+  color: active ? "#ffffff" : "#0056b3",
+  cursor: "pointer",
+  fontWeight: 600,
+  fontSize: "0.8rem",
+});
+
 const contentWrapper = {
   flex: 1,
   padding: 20,
-  overflowY: "auto",
 };
 
 const title = {
@@ -262,7 +347,22 @@ const docLink = {
 const footerStyle = {
   backgroundColor: "#ffffff",
   textAlign: "center",
-  padding: "10px",
+  padding: "14px 10px",
   borderTop: "4px solid #0056b3",
   color: "#000",
+};
+
+const footerLinks = {
+  listStyle: "none",
+  padding: 0,
+  margin: "8px 0 0",
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "12px",
+  justifyContent: "center",
+};
+
+const srOnly = {
+  position: "absolute",
+  left: "-9999px",
 };
