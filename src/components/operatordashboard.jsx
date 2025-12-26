@@ -104,7 +104,7 @@ export default function ComplaintRegister() {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/department/register`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        
       );
 
       setGeneratedId(complaintId);
@@ -244,7 +244,7 @@ export default function ComplaintRegister() {
 
               <div style={group}>
                 <label style={label}>संबंधित दस्तावेज़</label>
-                <input type="file" multiple onChange={handleFileChange} />
+                <input type="file"   name="documents"  multiple onChange={handleFileChange} />
 
                 {documents.map((file, index) => (
                   <div
@@ -287,13 +287,99 @@ export default function ComplaintRegister() {
 
               <div style={group}>
                 <label style={label}>संबंधित विभाग</label>
-                <select style={input} value={department} onChange={(e) => setDepartment(e.target.value)}>
-                  <option value="">-- विभाग चुनें --</option>
-                  <option value="राजस्व विभाग">राजस्व विभाग</option>
-                  <option value="पुलिस विभाग">पुलिस विभाग</option>
-                  <option value="स्वास्थ्य विभाग">स्वास्थ्य विभाग</option>
-                  <option value="शिक्षा विभाग">शिक्षा विभाग</option>
-                </select>
+                <select
+  style={input}
+  value={department}
+  onChange={(e) => setDepartment(e.target.value)}
+>
+  <option value="">-- विभाग चुनें --</option>
+
+  <option value="जिला प्रशासन उधम सिंह नगर">जिला प्रशासन उधम सिंह नगर</option>
+  <option value="जिलाधिकारी कार्यालय">जिलाधिकारी कार्यालय</option>
+  <option value="अपर जिलाधिकारी कार्यालय">अपर जिलाधिकारी कार्यालय</option>
+  <option value="कोषागार विभाग">कोषागार विभाग</option>
+  <option value="राजस्व विभाग">राजस्व विभाग</option>
+
+  <option value="पुलिस विभाग">पुलिस विभाग</option>
+
+  <option value="उप जिलाधिकारी रुद्रपुर">उप जिलाधिकारी रुद्रपुर</option>
+  <option value="उप जिलाधिकारी काशीपुर">उप जिलाधिकारी काशीपुर</option>
+  <option value="उप जिलाधिकारी गदरपुर">उप जिलाधिकारी गदरपुर</option>
+  <option value="उप जिलाधिकारी जसपुर">उप जिलाधिकारी जसपुर</option>
+  <option value="उप जिलाधिकारी बाजपुर">उप जिलाधिकारी बाजपुर</option>
+  <option value="उप जिलाधिकारी खटीमा">उप जिलाधिकारी खटीमा</option>
+  <option value="उप जिलाधिकारी सितारगंज">उप जिलाधिकारी सितारगंज</option>
+
+  <option value="नगर निगम रुद्रपुर">नगर निगम रुद्रपुर</option>
+  <option value="नगर निगम काशीपुर">नगर निगम काशीपुर</option>
+  <option value="नगर पालिका परिषद गदरपुर">नगर पालिका परिषद गदरपुर</option>
+  <option value="नगर पालिका परिषद जसपुर">नगर पालिका परिषद जसपुर</option>
+  <option value="नगर पालिका परिषद बाजपुर">नगर पालिका परिषद बाजपुर</option>
+  <option value="नगर पालिका परिषद खटीमा">नगर पालिका परिषद खटीमा</option>
+  <option value="नगर पंचायत केलाखेड़ा">नगर पंचायत केलाखेड़ा</option>
+  <option value="नगर पंचायत दिनेशपुर">नगर पंचायत दिनेशपुर</option>
+  <option value="नगर पंचायत महुआडाली">नगर पंचायत महुआडाली</option>
+  <option value="नगर पंचायत शक्तिफार्म">नगर पंचायत शक्तिफार्म</option>
+
+  <option value="लोक निर्माण विभाग">लोक निर्माण विभाग</option>
+  <option value="उत्तराखंड जल संस्थान">उत्तराखंड जल संस्थान</option>
+  <option value="उत्तराखंड पावर कॉरपोरेशन लिमिटेड">
+    उत्तराखंड पावर कॉरपोरेशन लिमिटेड
+  </option>
+  <option value="सिंचाई विभाग">सिंचाई विभाग</option>
+  <option value="लघु सिंचाई विभाग">लघु सिंचाई विभाग</option>
+
+  <option value="मुख्य चिकित्सा अधिकारी कार्यालय">
+    मुख्य चिकित्सा अधिकारी कार्यालय
+  </option>
+  <option value="जिला अस्पताल उधम सिंह नगर">
+    जिला अस्पताल उधम सिंह नगर
+  </option>
+  <option value="रुद्रपुर मेडिकल कॉलेज">रुद्रपुर मेडिकल कॉलेज</option>
+  <option value="आयुष विभाग">आयुष विभाग</option>
+
+  <option value="प्राथमिक शिक्षा विभाग">प्राथमिक शिक्षा विभाग</option>
+  <option value="माध्यमिक शिक्षा विभाग">माध्यमिक शिक्षा विभाग</option>
+  <option value="जी.बी. पंत विश्वविद्यालय पंतनगर">
+    जी.बी. पंत विश्वविद्यालय पंतनगर
+  </option>
+
+  <option value="ग्रामीण विकास विभाग">ग्रामीण विकास विभाग</option>
+  <option value="पंचायतीराज विभाग">पंचायतीराज विभाग</option>
+  <option value="जिला पंचायत उधम सिंह नगर">
+    जिला पंचायत उधम सिंह नगर
+  </option>
+  <option value="समाज कल्याण विभाग">समाज कल्याण विभाग</option>
+  <option value="महिला एवं बाल विकास विभाग">
+    महिला एवं बाल विकास विभाग
+  </option>
+  <option value="अल्पसंख्यक कल्याण विभाग">
+    अल्पसंख्यक कल्याण विभाग
+  </option>
+
+  <option value="कृषि विभाग">कृषि विभाग</option>
+  <option value="बागवानी विभाग">बागवानी विभाग</option>
+  <option value="पशुपालन विभाग">पशुपालन विभाग</option>
+  <option value="गन्ना विकास एवं चीनी उद्योग विभाग">
+    गन्ना विकास एवं चीनी उद्योग विभाग
+  </option>
+
+  <option value="श्रम विभाग">श्रम विभाग</option>
+  <option value="फैक्ट्री एवं बॉयलर विभाग">
+    फैक्ट्री एवं बॉयलर विभाग
+  </option>
+  <option value="औद्योगिक विकास विभाग">
+    औद्योगिक विकास विभाग
+  </option>
+
+  <option value="परिवहन विभाग">परिवहन विभाग</option>
+  <option value="खाद्य एवं नागरिक आपूर्ति विभाग">
+    खाद्य एवं नागरिक आपूर्ति विभाग
+  </option>
+  <option value="खाद्य सुरक्षा विभाग">खाद्य सुरक्षा विभाग</option>
+  <option value="पर्यावरण बोर्ड">पर्यावरण बोर्ड</option>
+</select>
+
               </div>
 
               <button style={button} onClick={handleSubmit} disabled={loading}>

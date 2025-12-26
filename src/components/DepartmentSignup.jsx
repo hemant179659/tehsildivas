@@ -9,18 +9,76 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 /* =========================
-   DEPARTMENT VERIFICATION
+   DEPARTMENT LIST (ONLY NAMES)
+   NO VERIFICATION CODES HERE
 ========================= */
-const DEPARTMENT_CODES = {
-  "राजस्व विभाग": "11111",
-  "पुलिस विभाग": "22222",
-  "स्वास्थ्य विभाग": "33333",
-  "शिक्षा विभाग": "44444",
-};
+const DEPARTMENTS = [
+  "जिला प्रशासन उधम सिंह नगर",
+  "जिलाधिकारी कार्यालय",
+  "अपर जिलाधिकारी कार्यालय",
+  "कोषागार विभाग",
+  "राजस्व विभाग",
+
+  "पुलिस विभाग",
+
+  "उप जिलाधिकारी रुद्रपुर",
+  "उप जिलाधिकारी काशीपुर",
+  "उप जिलाधिकारी गदरपुर",
+  "उप जिलाधिकारी जसपुर",
+  "उप जिलाधिकारी बाजपुर",
+  "उप जिलाधिकारी खटीमा",
+  "उप जिलाधिकारी सितारगंज",
+
+  "नगर निगम रुद्रपुर",
+  "नगर निगम काशीपुर",
+  "नगर पालिका परिषद गदरपुर",
+  "नगर पालिका परिषद जसपुर",
+  "नगर पालिका परिषद बाजपुर",
+  "नगर पालिका परिषद खटीमा",
+  "नगर पंचायत केलाखेड़ा",
+  "नगर पंचायत दिनेशपुर",
+  "नगर पंचायत महुआडाली",
+  "नगर पंचायत शक्तिफार्म",
+
+  "लोक निर्माण विभाग",
+  "उत्तराखंड जल संस्थान",
+  "उत्तराखंड पावर कॉरपोरेशन लिमिटेड",
+  "सिंचाई विभाग",
+  "लघु सिंचाई विभाग",
+
+  "मुख्य चिकित्सा अधिकारी कार्यालय",
+  "जिला अस्पताल उधम सिंह नगर",
+  "रुद्रपुर मेडिकल कॉलेज",
+  "आयुष विभाग",
+
+  "प्राथमिक शिक्षा विभाग",
+  "माध्यमिक शिक्षा विभाग",
+  "जी.बी. पंत विश्वविद्यालय पंतनगर",
+
+  "ग्रामीण विकास विभाग",
+  "पंचायतीराज विभाग",
+  "जिला पंचायत उधम सिंह नगर",
+  "समाज कल्याण विभाग",
+  "महिला एवं बाल विकास विभाग",
+  "अल्पसंख्यक कल्याण विभाग",
+
+  "कृषि विभाग",
+  "बागवानी विभाग",
+  "पशुपालन विभाग",
+  "गन्ना विकास एवं चीनी उद्योग विभाग",
+
+  "श्रम विभाग",
+  "फैक्ट्री एवं बॉयलर विभाग",
+  "औद्योगिक विकास विभाग",
+
+  "परिवहन विभाग",
+  "खाद्य एवं नागरिक आपूर्ति विभाग",
+  "खाद्य सुरक्षा विभाग",
+  "पर्यावरण बोर्ड",
+];
 
 export default function DepartmentSignup() {
   const navigate = useNavigate();
-
 
   const [deptName, setDeptName] = useState("");
   const [email, setEmail] = useState("");
@@ -46,13 +104,7 @@ export default function DepartmentSignup() {
 
   /* ================= SIGNUP ================= */
   const handleSignup = async () => {
-    if (
-      !deptName ||
-      !email ||
-      !password ||
-      !confirmPassword ||
-      !verificationCode
-    ) {
+    if (!deptName || !email || !password || !confirmPassword || !verificationCode) {
       return toast.error("कृपया सभी फ़ील्ड भरें");
     }
 
@@ -60,15 +112,12 @@ export default function DepartmentSignup() {
       return toast.error("पासवर्ड मेल नहीं खा रहा");
     }
 
-    if (DEPARTMENT_CODES[deptName] !== verificationCode) {
-      return toast.error("गलत Verification Code");
-    }
-
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/department/signup`, {
         deptName,
         email,
         password,
+        verificationCode,
       });
 
       toast.success("विभाग सफलतापूर्वक पंजीकृत हो गया");
@@ -85,7 +134,6 @@ export default function DepartmentSignup() {
     <div style={pageWrapper}>
       <ToastContainer autoClose={2000} position="top-right" />
 
-      {/* LEFT IMAGE (DESKTOP ONLY) */}
       {!isMobile && (
         <div style={leftSection}>
           <div style={leftImage} />
@@ -94,7 +142,6 @@ export default function DepartmentSignup() {
         </div>
       )}
 
-      {/* RIGHT FORM */}
       <div style={rightSection}>
         <div style={loginBox}>
           <h2 style={title}>विभाग पंजीकरण</h2>
@@ -105,7 +152,7 @@ export default function DepartmentSignup() {
             onChange={(e) => setDeptName(e.target.value)}
           >
             <option value="">विभाग चुनें</option>
-            {Object.keys(DEPARTMENT_CODES).map((dept) => (
+            {DEPARTMENTS.map((dept) => (
               <option key={dept} value={dept}>
                 {dept}
               </option>
@@ -157,7 +204,6 @@ export default function DepartmentSignup() {
         </div>
       </div>
 
-      {/* FOOTER */}
       <footer style={footerStyle}>
         <p style={{ margin: 0, fontWeight: 700 }}>जिला प्रशासन</p>
         <p style={{ margin: 0, fontSize: "0.75rem" }}>
@@ -168,7 +214,7 @@ export default function DepartmentSignup() {
   );
 }
 
-/* ================= STYLES ================= */
+/* ================= STYLES (UNCHANGED) ================= */
 
 const pageWrapper = {
   minHeight: "100vh",
@@ -195,7 +241,7 @@ const leftImage = {
 const overlay = {
   position: "absolute",
   inset: 0,
-  backgroundColor: "rgba(0,0,0,0.35)", // ONLY image dark
+  backgroundColor: "rgba(0,0,0,0.35)",
   zIndex: 2,
 };
 

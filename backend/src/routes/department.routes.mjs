@@ -1,8 +1,11 @@
 import express from "express";
+console.log("✅ department.routes LOADED");
+
 import {
   departmentSignup,
   departmentLogin,
   registerComplaint,
+    seedDepartments,
   complaintDocumentUpload,
   getComplaintsByDepartment,
   updateComplaintStatus,
@@ -36,6 +39,8 @@ router.put(
 );
 
 /* PUBLIC */
+
+
 router.get(
   "/complaint-status/:complaintId",
   getComplaintStatus

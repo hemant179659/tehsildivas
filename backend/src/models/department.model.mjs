@@ -6,8 +6,18 @@ import mongoose from "mongoose";
 const departmentSchema = new mongoose.Schema(
   {
     deptName: { type: String, required: true, unique: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
+    verificationCode: { type: String, required: true },
+
+    email: {
+      type: String,
+      unique: true,
+      lowercase: true,
+      sparse: true, // seed ke time empty reh sakta hai
+    },
+
+    password: { type: String },
+    isRegistered: { type: Boolean, default: false },
+
     resetToken: String,
     resetTokenExpiry: Date,
   },
@@ -32,7 +42,6 @@ const projectSchema = new mongoose.Schema(
     designation: { type: String, required: true },
     contactNumber: { type: String, required: true },
     remarks: { type: String, default: "" },
-
     photos: [
       {
         url: String,
@@ -52,24 +61,17 @@ const Project = mongoose.model("Project", projectSchema);
 const complaintSchema = new mongoose.Schema(
   {
     complaintId: { type: String, required: true, unique: true, index: true },
-
     complainantName: { type: String, required: true },
     guardianName: { type: String, required: true },
     address: { type: String, required: true },
-    tehsil: {
-  type: String,
-  required: true,
-},
-
+    tehsil: { type: String, required: true },
     mobile: {
       type: String,
       required: true,
       match: /^[0-9]{10}$/,
     },
-
     complaintDetails: { type: String, required: true },
 
-    /* OPERATOR DOCUMENTS */
     documents: [
       {
         url: String,
@@ -78,7 +80,6 @@ const complaintSchema = new mongoose.Schema(
       },
     ],
 
-    /* DEPARTMENT SUPPORTING DOCUMENTS */
     supportingDocuments: [
       {
         url: String,
