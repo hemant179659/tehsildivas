@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import BackButton from "./BackButton";
 import backgroundImage from "../assets/login.jpg";
+import axios from "axios";
 
 // Toastify
 import { ToastContainer, toast } from "react-toastify";
@@ -31,28 +32,38 @@ export default function AdminLogin() {
   }, [navigate]);
 
   /* ================= LOGIN ================= */
-  const handleLogin = () => {
-    if (!email || !password) {
-      return toast.error(
-        lang === "hi"
-          ? "कृपया ईमेल और पासवर्ड दर्ज करें"
-          : "Please enter email and password"
-      );
-    }
+ const handleLogin = async () => {
+  if (!email || !password) {
+    return toast.error(
+      lang === "hi"
+        ? "कृपया ईमेल और पासवर्ड दर्ज करें"
+        : "Please enter email and password"
+    );
+  }
 
-    if (email === "diousn@nic.in" && password === "diousn@123") {
+  try {
+    const res = await axios.post( `${import.meta.env.VITE_API_URL}/admin/adminlogin`, {
+      email,
+      password,
+    });
+
+    if (res.data?.success) {
       localStorage.setItem("isAdmin", "true");
+
       toast.success(lang === "hi" ? "लॉगिन सफल" : "Login successful");
 
       setTimeout(() => {
         navigate("/admin-dashboard", { replace: true });
       }, 1200);
-    } else {
-      toast.error(
-        lang === "hi" ? "गलत ईमेल या पासवर्ड" : "Invalid email or password"
-      );
     }
-  };
+  } catch (err) {
+    toast.error(
+      lang === "hi"
+        ? "गलत ईमेल या पासवर्ड"
+        : "Invalid email or password"
+    );
+  }
+};
 
   return (
     <div style={pageWrapper} lang={lang}>

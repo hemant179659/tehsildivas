@@ -26,7 +26,22 @@ const departmentSchema = new mongoose.Schema(
 
 const Department = mongoose.model("Department", departmentSchema);
 
+const adminSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true }
+});
+
+export const Admin = mongoose.model("Admin", adminSchema);
+const operatorSchema = new mongoose.Schema({
+  tehsil: { type: String, required: true },
+  email: { type: String, required: true },
+  password: { type: String, required: true },
+  operatorName: { type: String, required: true },
+});
+
+export const Operator = mongoose.model("Operator", operatorSchema);
 /* =========================
+
    PROJECT SCHEMA
 ========================= */
 const projectSchema = new mongoose.Schema(

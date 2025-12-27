@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import BackButton from "./BackButton";
 import backgroundImage from "../assets/login.jpg";
+import axios from "axios";
 
 export default function DataEntryLogin() {
   const navigate = useNavigate();
@@ -12,43 +13,16 @@ export default function DataEntryLogin() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [lang, setLang] = useState("hi");
 
-  const TEHSIL_USERS = {
-    "Tehsil Rudrapur": {
-      email: "rudrapur@deo.in",
-      password: "rudrapur@123",
-      operatorName: "Data Entry Operator",
-    },
-    "Tehsil Sitarganj": {
-      email: "sitarganj@deo.in",
-      password: "sitarganj@123",
-      operatorName: "Data Entry Operator",
-    },
-    "Tehsil Khatima": {
-      email: "khatima@deo.in",
-      password: "khatima@123",
-      operatorName: "Data Entry Operator",
-    },
-    "Tehsil Kashipur": {
-      email: "kashipur@deo.in",
-      password: "kashipur@123",
-      operatorName: "Data Entry Operator",
-    },
-     "Tehsil Jaspur": {
-      email: "Jaspurr@deo.in",
-      password: "Jaspur@123",
-      operatorName: "Data Entry Operator",
-    },
-     "Tehsil Gadarpur": {
-      email: "Gadarpur@deo.in",
-      password: "Gadarpur@123",
-      operatorName: "Data Entry Operator",
-    },
-     "Tehsil Bajpur": {
-      email: "Bajpur@deo.in",
-      password: "Bajpur@123",
-      operatorName: "Data Entry Operator",
-    },
-  };
+  /* 🔹 ONLY FOR DROPDOWN (NO PASSWORD HERE) */
+  const TEHSIL_LIST = [
+    "Tehsil Rudrapur",
+    "Tehsil Sitarganj",
+    "Tehsil Khatima",
+    "Tehsil Kashipur",
+    "Tehsil Jaspur",
+    "Tehsil Gadarpur",
+    "Tehsil Bajpur",
+  ];
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -56,23 +30,27 @@ export default function DataEntryLogin() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleLogin = () => {
+  /* ================= LOGIN (DB BASED) ================= */
+  const handleLogin = async () => {
     if (!tehsil || !email || !password) {
       alert(lang === "hi" ? "कृपया सभी जानकारी भरें" : "Please fill all details");
       return;
     }
 
-    const user = TEHSIL_USERS[tehsil];
-    if (!user) {
-      alert(lang === "hi" ? "अमान्य तहसील" : "Invalid tehsil");
-      return;
-    }
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/department/operatorlogin`, {
+        tehsil,
+        email,
+        password,
+      });
 
-    if (email === user.email && password === user.password) {
-      localStorage.setItem("dataEntryOperator", user.operatorName);
-      localStorage.setItem("loggedTehsil", tehsil);
-      navigate("/operator-dashboard", { replace: true });
-    } else {
+      if (res.data?.success) {
+        localStorage.setItem("dataEntryOperator", res.data.operatorName);
+        localStorage.setItem("loggedTehsil", res.data.tehsil);
+
+        navigate("/operator-dashboard", { replace: true });
+      }
+    } catch (err) {
       alert(lang === "hi" ? "गलत ईमेल या पासवर्ड" : "Invalid email or password");
     }
   };
@@ -118,7 +96,7 @@ export default function DataEntryLogin() {
               <option value="">
                 {lang === "hi" ? "-- तहसील चुनें --" : "-- Select Tehsil --"}
               </option>
-              {Object.keys(TEHSIL_USERS).map((t) => (
+              {TEHSIL_LIST.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
@@ -150,7 +128,7 @@ export default function DataEntryLogin() {
         </main>
       </div>
 
-      {/* ---------- FOOTER (EXACT HOME LIKE) ---------- */}
+      {/* ---------- FOOTER ---------- */}
       <footer style={footerStyle} role="contentinfo">
         <p style={{ margin: 0, fontWeight: 700 }}>
           {lang === "hi"
@@ -179,7 +157,7 @@ export default function DataEntryLogin() {
 const pageWrapper = {
   minHeight: "100vh",
   display: "flex",
-  flexDirection: "column", // 🔥 SAME AS HOME
+  flexDirection: "column",
   backgroundColor: "#f4f6f9",
 };
 
@@ -188,7 +166,6 @@ const contentWrapper = {
   display: "flex",
 };
 
-/* Language toggle */
 const langToggle = {
   position: "absolute",
   top: "10px",
@@ -208,7 +185,6 @@ const langBtn = (active) => ({
   fontSize: "0.8rem",
 });
 
-/* Left image */
 const leftSection = {
   flex: 1,
   position: "relative",
@@ -228,7 +204,6 @@ const overlay = {
   background: "rgba(0,0,0,0.25)",
 };
 
-/* Right form */
 const rightSection = {
   flex: 1,
   display: "flex",
@@ -278,7 +253,6 @@ const loginBtn = {
   cursor: "pointer",
 };
 
-/* Footer – SAME AS HOME */
 const footerStyle = {
   backgroundColor: "#ffffff",
   textAlign: "center",

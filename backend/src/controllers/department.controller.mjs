@@ -1,4 +1,4 @@
-import { Department, Complaint } from "../models/department.model.mjs";
+import { Department, Complaint,Admin,Operator} from "../models/department.model.mjs";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import dotenv from "dotenv";
@@ -32,6 +32,50 @@ export const supportingDocUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).array("supportDocs", 10);
 
+
+export const adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const match = await bcrypt.compare(password, admin.password);
+    if (!match) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+export const operatorLogin = async (req, res) => {
+  try {
+    const { tehsil, email, password } = req.body;
+
+    const operator = await Operator.findOne({ tehsil, email });
+
+    if (!operator) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const match = await bcrypt.compare(password, operator.password);
+    if (!match) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    res.json({
+      success: true,
+      operatorName: operator.operatorName,
+      tehsil: operator.tehsil,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
 /* ================= SEED ALL DEPARTMENTS ================= */
 export const seedDepartments = async (req, res) => {
   try {

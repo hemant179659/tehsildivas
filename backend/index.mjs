@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 
 // ROUTES
 import departmentRoutes from "./src/routes/department.routes.mjs";
+import adminRoutes from "./src/routes/department.routes.mjs";
+import operatorRoutes from "./src/routes/department.routes.mjs";
 
 /* =========================
    LOAD ENV (MUST BE FIRST)
@@ -61,6 +63,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
    ROUTES
 ========================= */
 app.use("/api/department", departmentRoutes);
+
+app.use("/api/admin", adminRoutes);
+
+app.use("/api/operator", operatorRoutes);
 
 /* =========================
    HEALTH CHECK
