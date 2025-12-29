@@ -1,8 +1,17 @@
+// React hooks for side effects and state management
 import { useEffect, useState } from "react";
+
+// React Router hook for navigation
 import { useNavigate } from "react-router-dom";
+
+// Axios for making API requests
 import axios from "axios";
+
+// Toast notifications for success / error messages
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+// Icons used in sidebar and UI
 import {
   FaTachometerAlt,
   FaList,
@@ -11,15 +20,16 @@ import {
   FaTimes,
 } from "react-icons/fa";
 
+// Complaint Register component for Data Entry Operator
 export default function ComplaintRegister() {
   const navigate = useNavigate();
 
-  // 🔐 SESSION DATA
+  // 🔐 SESSION DATA (stored at operator login)
   const operatorName =
     localStorage.getItem("dataEntryOperator") || "Data Entry Operator";
   const loggedTehsil = localStorage.getItem("loggedTehsil");
 
-  // 🚫 PROTECT ROUTE
+  // 🚫 PROTECT ROUTE (redirect if operator not logged in)
   useEffect(() => {
     if (!loggedTehsil) {
       navigate("/operator-login", { replace: true });
@@ -27,6 +37,7 @@ export default function ComplaintRegister() {
   }, [loggedTehsil, navigate]);
 
   // ================= STATE =================
+  // Complainant details
   const [complainantName, setComplainantName] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [address, setAddress] = useState("");
@@ -34,16 +45,19 @@ export default function ComplaintRegister() {
   const [complaintDetails, setComplaintDetails] = useState("");
   const [documents, setDocuments] = useState([]);
 
+  // Assignment related fields
   const [assignedBy, setAssignedBy] = useState("");
   const [assignedPlace] = useState(loggedTehsil || "");
   const [assignedDate, setAssignedDate] = useState("");
   const [department, setDepartment] = useState("");
 
+  // Submission state
   const [generatedId, setGeneratedId] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // ================= ID =================
+  // Generate random 8 character complaint ID
   const generateComplaintId = () => {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     let id = "";
@@ -54,16 +68,19 @@ export default function ComplaintRegister() {
   };
 
   // ================= FILE HANDLING =================
+  // Handle document selection
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setDocuments((prev) => [...prev, ...files]);
   };
 
+  // Remove selected document
   const removeFile = (index) => {
     setDocuments((prev) => prev.filter((_, i) => i !== index));
   };
 
   // ================= SUBMIT =================
+  // Submit complaint to backend
   const handleSubmit = async () => {
     if (
       !complainantName ||
@@ -83,6 +100,7 @@ export default function ComplaintRegister() {
     const complaintId = generateComplaintId();
     const formData = new FormData();
 
+    // Append form fields
     formData.append("complaintId", complaintId);
     formData.append("complainantName", complainantName);
     formData.append("guardianName", guardianName);
@@ -95,6 +113,7 @@ export default function ComplaintRegister() {
     formData.append("assignedDate", assignedDate);
     formData.append("department", department);
 
+    // Append uploaded documents
     documents.forEach((file) => {
       formData.append("documents", file);
     });
@@ -104,7 +123,6 @@ export default function ComplaintRegister() {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/department/register`,
         formData,
-        
       );
 
       setGeneratedId(complaintId);
@@ -117,12 +135,14 @@ export default function ComplaintRegister() {
     }
   };
 
+  // Logout operator
   const handleLogout = () => {
     localStorage.removeItem("dataEntryOperator");
     localStorage.removeItem("loggedTehsil");
     navigate("/operator-login", { replace: true });
   };
 
+  // Reset form for new complaint
   const handleNewComplaint = () => {
     setComplainantName("");
     setGuardianName("");
@@ -138,13 +158,14 @@ export default function ComplaintRegister() {
   };
 
   /* ================= STYLES ================= */
-
+  // Label style
   const label = {
     fontWeight: 800,
     marginBottom: 6,
     color: "#000000",
   };
 
+  // Input & textarea style
   const input = {
     width: "100%",
     padding: "10px",
@@ -155,8 +176,10 @@ export default function ComplaintRegister() {
     fontWeight: 600,
   };
 
+  // Form group spacing
   const group = { marginBottom: "15px" };
 
+  // Button style
   const button = {
     width: "100%",
     padding: "12px",
@@ -170,6 +193,7 @@ export default function ComplaintRegister() {
 
   return (
     <>
+      {/* Toast container */}
       <ToastContainer autoClose={2000} />
 
       <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -217,35 +241,44 @@ export default function ComplaintRegister() {
 
           {!submitted ? (
             <>
+              {/* --- FORM FIELDS (UNCHANGED) --- */}
+
+                 {/* Complainant name field */}
               <div style={group}>
                 <label style={label}>शिकायतकर्ता का नाम</label>
                 <input style={input} value={complainantName} onChange={(e) => setComplainantName(e.target.value)} />
               </div>
 
+              {/* Guardian / Husband name field */}
               <div style={group}>
                 <label style={label}>पिता / पति का नाम</label>
                 <input style={input} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
               </div>
 
+              {/* Full address textarea */}
               <div style={group}>
                 <label style={label}>पूरा पता</label>
                 <textarea style={input} value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
 
+              {/* Mobile number input */}
               <div style={group}>
                 <label style={label}>मोबाइल नंबर</label>
                 <input style={input} maxLength="10" value={mobile} onChange={(e) => setMobile(e.target.value)} />
               </div>
 
+              {/* Complaint details textarea */}
               <div style={group}>
                 <label style={label}>शिकायत का विवरण</label>
                 <textarea style={input} value={complaintDetails} onChange={(e) => setComplaintDetails(e.target.value)} />
               </div>
 
+              {/* Document upload section */}
               <div style={group}>
                 <label style={label}>संबंधित दस्तावेज़</label>
                 <input type="file"   name="documents"  multiple onChange={handleFileChange} />
 
+                {/* Uploaded documents list */}
                 {documents.map((file, index) => (
                   <div
                     key={index}
@@ -259,9 +292,12 @@ export default function ComplaintRegister() {
                       border: "1px solid #ced4da",
                     }}
                   >
+                    {/* File name */}
                     <span style={{ flex: 1, fontWeight: 700, color: "#000" }}>
                       {file.name}
                     </span>
+
+                    {/* Remove file icon */}
                     <FaTimes
                       style={{ cursor: "pointer", color: "#dc3545" }}
                       onClick={() => removeFile(index)}
@@ -270,21 +306,25 @@ export default function ComplaintRegister() {
                 ))}
               </div>
 
+              {/* Assigning officer name */}
               <div style={group}>
                 <label style={label}>शिकायत सौंपने वाला अधिकारी</label>
                 <input style={input} value={assignedBy} onChange={(e) => setAssignedBy(e.target.value)} />
               </div>
 
+              {/* Assigned place (readonly) */}
               <div style={group}>
                 <label style={label}>सौंपा गया स्थान</label>
                 <input style={input} value={assignedPlace} disabled />
               </div>
 
+              {/* Assigned date */}
               <div style={group}>
                 <label style={label}>सौंपने की तिथि</label>
                 <input type="date" style={input} value={assignedDate} onChange={(e) => setAssignedDate(e.target.value)} />
               </div>
 
+              {/* Department selection dropdown */}
               <div style={group}>
                 <label style={label}>संबंधित विभाग</label>
                 <select

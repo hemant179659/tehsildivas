@@ -1,6 +1,13 @@
+// React hooks for state management and lifecycle
 import { useEffect, useState } from "react";
+
+// React Router navigation hook
 import { useNavigate } from "react-router-dom";
+
+// Axios for API requests
 import axios from "axios";
+
+// Recharts components for charts and graphs
 import {
   PieChart,
   Pie,
@@ -14,28 +21,35 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
+
+// Icons used in admin sidebar
 import {
   FaTachometerAlt,
   FaSignOutAlt,
   FaUserCircle,
 } from "react-icons/fa";
+
+// Toast notifications
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Admin Project Dashboard Component
 export default function AdminProjectDashboard() {
   const navigate = useNavigate();
 
-  const [deptData, setDeptData] = useState([]);
+  // ================= STATE =================
+  const [deptData, setDeptData] = useState([]); // Department-wise aggregated data
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
     progress: 0,
     resolved: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  }); // Overall statistics
+  const [loading, setLoading] = useState(true); // Loading state
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Responsive check
 
   /* ================= RESIZE ================= */
+  // Handle screen resize for responsive layout
   useEffect(() => {
     const resize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", resize);
@@ -43,6 +57,7 @@ export default function AdminProjectDashboard() {
   }, []);
 
   /* ================= ADMIN AUTH ================= */
+  // Protect admin route: redirect if not logged in
   useEffect(() => {
     const isAdmin = localStorage.getItem("isAdmin");
     if (!isAdmin) {
@@ -52,6 +67,7 @@ export default function AdminProjectDashboard() {
   }, [navigate]);
 
   /* ================= FETCH DATA ================= */
+  // Fetch all complaints for admin dashboard
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -61,6 +77,7 @@ export default function AdminProjectDashboard() {
 
         const complaints = res.data.complaints || [];
 
+        // Overall counts
         const total = complaints.length;
         const pending = complaints.filter(c => c.status === "लंबित").length;
         const progress = complaints.filter(c => c.status === "प्रक्रिया में").length;
@@ -68,6 +85,7 @@ export default function AdminProjectDashboard() {
 
         setStats({ total, pending, progress, resolved });
 
+        // Department-wise aggregation
         const deptMap = {};
         complaints.forEach(c => {
           if (!deptMap[c.department]) {
@@ -96,8 +114,10 @@ export default function AdminProjectDashboard() {
     fetchAll();
   }, []);
 
+  // Colors used for charts
   const COLORS = ["#dc3545", "#ffc107", "#198754", "#0d6efd", "#6f42c1"];
 
+  // Admin logout handler
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
     navigate("/admin-login", { replace: true });
@@ -105,6 +125,7 @@ export default function AdminProjectDashboard() {
 
   return (
     <>
+      {/* Toast notifications */}
       <ToastContainer autoClose={2000} />
 
       <div
@@ -123,9 +144,7 @@ export default function AdminProjectDashboard() {
           <h3 style={{ marginTop: 10, color: "#fff" }}>Admin</h3>
 
           <div style={sideItem}><FaTachometerAlt /> Dashboard</div>
-          <div style={sideItem}onClick={() => navigate("/admin/pending")}>🟥 लंबित
-           
-          </div>
+          <div style={sideItem}onClick={() => navigate("/admin/pending")}>🟥 लंबित</div>
           <div style={sideItem}onClick={() => navigate("/admin/in-progress")}>🟨 प्रक्रिया में</div>
           <div style={sideItem}onClick={() => navigate("/admin/completed")}>🟩 निस्तारित</div>
           <div style={sideItem}onClick={() => navigate("/admin/overall")}>📊 Overall Status</div>
@@ -195,8 +214,6 @@ export default function AdminProjectDashboard() {
               </div>
 
               {/* ================= BAR CHART ================= */}
-             
-              
             </>
           )}
         </main>
@@ -215,24 +232,28 @@ export default function AdminProjectDashboard() {
 
 /* ================= STYLES ================= */
 
+// Sidebar styles
 const sidebar = {
   background: "#002147",
   color: "#fff",
   padding: 20,
 };
 
+// Sidebar item
 const sideItem = {
   marginTop: 14,
   cursor: "pointer",
   fontWeight: 700,
 };
 
+// Page title
 const title = {
   textAlign: "center",
   fontWeight: 900,
   color: "#000",
 };
 
+// Chart title
 const chartTitle = {
   textAlign: "center",
   color: "#000",
@@ -240,12 +261,14 @@ const chartTitle = {
   marginBottom: 10,
 };
 
+// Center text
 const centerText = {
   textAlign: "center",
   fontWeight: 700,
   color: "#000",
 };
 
+// Top cards container
 const cards = {
   display: "flex",
   gap: 20,
@@ -254,6 +277,7 @@ const cards = {
   marginBottom: 40,
 };
 
+// Single stat card
 const card = {
   background: "#f8f9fa",
   padding: 20,
@@ -264,18 +288,21 @@ const card = {
   color: "#000",
 };
 
+// Pie charts grid
 const pieGrid = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
   gap: 30,
 };
 
+// Chart container
 const chartBox = {
   background: "#f8f9fa",
   padding: 15,
   borderRadius: 10,
 };
 
+// Footer styles
 const footer = {
   position: "fixed",
   bottom: 0,

@@ -1,15 +1,25 @@
+// React hooks for state and lifecycle
 import { useState, useEffect } from "react";
+
+// React Router hooks and components
 import { useNavigate, Link } from "react-router-dom";
+
+// Axios for API requests
 import axios from "axios";
+
+// Back navigation button
 import BackButton from "./BackButton";
+
+// Background image
 import backgroundImage from "../assets/login.jpg";
 
-// Toastify
+// Toastify for notifications
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 /* =========================
    DEPARTMENT LIST
+   Used in dropdown for department selection
 ========================= */
 const DEPARTMENTS = [
   "जिला प्रशासन उधम सिंह नगर",
@@ -75,9 +85,11 @@ const DEPARTMENTS = [
   "पर्यावरण बोर्ड",
 ];
 
+// Department Signup Component
 export default function DepartmentSignup() {
   const navigate = useNavigate();
 
+  // ================= STATE =================
   const [deptName, setDeptName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,6 +99,7 @@ export default function DepartmentSignup() {
   const [lang, setLang] = useState("hi");
 
   /* ================= RESIZE ================= */
+  // Detect screen resize to handle responsive UI
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
@@ -94,6 +107,7 @@ export default function DepartmentSignup() {
   }, []);
 
   /* ================= REDIRECT ================= */
+  // Redirect if department already logged in
   useEffect(() => {
     const loggedInDept = localStorage.getItem("loggedInDepartment");
     if (loggedInDept) {
@@ -102,6 +116,7 @@ export default function DepartmentSignup() {
   }, [navigate]);
 
   /* ================= SIGNUP ================= */
+  // Handle department signup
   const handleSignup = async () => {
     if (!deptName || !email || !password || !confirmPassword || !verificationCode) {
       return toast.error(
@@ -111,6 +126,7 @@ export default function DepartmentSignup() {
       );
     }
 
+    // Password confirmation check
     if (password !== confirmPassword) {
       return toast.error(
         lang === "hi"
@@ -120,6 +136,7 @@ export default function DepartmentSignup() {
     }
 
     try {
+      // API call for department signup
       await axios.post(`${import.meta.env.VITE_API_URL}/department/signup`, {
         deptName,
         email,
@@ -133,6 +150,7 @@ export default function DepartmentSignup() {
           : "Department registered successfully"
       );
 
+      // Redirect to login after success
       setTimeout(() => {
         navigate("/dept-login", { replace: true });
       }, 1500);
@@ -143,6 +161,7 @@ export default function DepartmentSignup() {
 
   return (
     <div style={pageWrapper} lang={lang}>
+      {/* Toast messages */}
       <ToastContainer autoClose={2000} position="top-right" />
 
       {/* ================= SKIP LINK ================= */}
@@ -176,6 +195,7 @@ export default function DepartmentSignup() {
               {lang === "hi" ? "विभाग पंजीकरण" : "Department Registration"}
             </h1>
 
+            {/* Department dropdown */}
             <select
               style={input}
               value={deptName}
@@ -191,6 +211,7 @@ export default function DepartmentSignup() {
               ))}
             </select>
 
+            {/* Email input */}
             <input
               style={input}
               type="email"
@@ -199,6 +220,7 @@ export default function DepartmentSignup() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
+            {/* Password input */}
             <input
               style={input}
               type="password"
@@ -207,6 +229,7 @@ export default function DepartmentSignup() {
               onChange={(e) => setPassword(e.target.value)}
             />
 
+            {/* Confirm password input */}
             <input
               style={input}
               type="password"
@@ -217,6 +240,7 @@ export default function DepartmentSignup() {
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
 
+            {/* Verification code */}
             <input
               style={input}
               type="text"
@@ -227,10 +251,12 @@ export default function DepartmentSignup() {
               onChange={(e) => setVerificationCode(e.target.value)}
             />
 
+            {/* Signup button */}
             <button style={primaryBtn} onClick={handleSignup}>
               {lang === "hi" ? "पंजीकरण करें" : "Register"}
             </button>
 
+            {/* Back to login */}
             <button
               style={secondaryBtn}
               onClick={() => navigate("/dept-login")}
@@ -241,7 +267,7 @@ export default function DepartmentSignup() {
         </main>
       </div>
 
-      {/* ================= FOOTER (HOME LIKE) ================= */}
+      {/* ================= FOOTER ================= */}
       <footer style={footerStyle} role="contentinfo">
         <p style={{ margin: 0, fontWeight: 700 }}>
           {lang === "hi"
@@ -267,6 +293,7 @@ export default function DepartmentSignup() {
 
 /* ===================== STYLES ===================== */
 
+// Page wrapper
 const pageWrapper = {
   minHeight: "100vh",
   display: "flex",
@@ -274,12 +301,13 @@ const pageWrapper = {
   backgroundColor: "#f4f6f9",
 };
 
+// Content wrapper
 const contentWrapper = {
   flex: 1,
   display: "flex",
 };
 
-/* Skip link */
+// Skip link for accessibility
 const skipLink = {
   position: "absolute",
   top: "-40px",
@@ -290,7 +318,7 @@ const skipLink = {
   zIndex: 1000,
 };
 
-/* Language toggle */
+// Language toggle
 const langToggle = {
   position: "absolute",
   top: "10px",
@@ -309,7 +337,7 @@ const langBtn = (active) => ({
   cursor: "pointer",
 });
 
-/* Left image */
+// Left image section
 const leftSection = {
   flex: 1,
   position: "relative",
@@ -329,7 +357,7 @@ const overlay = {
   backgroundColor: "rgba(0,0,0,0.25)",
 };
 
-/* Right section */
+// Right section
 const rightSection = {
   flex: 1,
   display: "flex",
@@ -338,7 +366,7 @@ const rightSection = {
   backgroundColor: "#ffffff",
 };
 
-/* Signup box */
+// Signup box
 const signupBox = {
   width: "100%",
   maxWidth: 420,
@@ -348,6 +376,7 @@ const signupBox = {
   boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
 };
 
+// Title
 const title = {
   textAlign: "center",
   marginBottom: 18,
@@ -356,6 +385,7 @@ const title = {
   color: "#000",
 };
 
+// Input
 const input = {
   width: "100%",
   padding: 11,
@@ -367,6 +397,7 @@ const input = {
   color: "#000",
 };
 
+// Primary button
 const primaryBtn = {
   width: "100%",
   padding: 11,
@@ -379,6 +410,7 @@ const primaryBtn = {
   cursor: "pointer",
 };
 
+// Secondary button
 const secondaryBtn = {
   width: "100%",
   padding: 9,
@@ -392,7 +424,7 @@ const secondaryBtn = {
   cursor: "pointer",
 };
 
-/* Footer – same as Home */
+// Footer
 const footerStyle = {
   backgroundColor: "#ffffff",
   textAlign: "center",
@@ -401,6 +433,7 @@ const footerStyle = {
   color: "#000",
 };
 
+// Footer links
 const footerLinks = {
   listStyle: "none",
   padding: 0,

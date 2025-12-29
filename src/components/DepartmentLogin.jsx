@@ -1,22 +1,39 @@
+// React hooks for state and lifecycle
 import { useState, useEffect } from "react";
+
+// React Router hooks and components
 import { useNavigate, Link } from "react-router-dom";
+
+// Axios for API calls
 import axios from "axios";
+
+// Back button component
 import BackButton from "./BackButton";
+
+// Background image for left panel
 import backgroundImage from "../assets/login.jpg";
 
-// Toastify
+// Toastify for notifications
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Department Login Component
 export default function DepartmentLogin() {
   const navigate = useNavigate();
 
+  // ================= STATE =================
+  // Login credentials
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Responsive check
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Language toggle (hi | en)
   const [lang, setLang] = useState("hi");
 
   /* ================= RESIZE ================= */
+  // Detect screen resize to update mobile view
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
@@ -24,6 +41,7 @@ export default function DepartmentLogin() {
   }, []);
 
   /* ================= AUTO REDIRECT ================= */
+  // Redirect if department already logged in
   useEffect(() => {
     const loggedInDept = localStorage.getItem("loggedInDepartment");
     if (loggedInDept) {
@@ -32,6 +50,7 @@ export default function DepartmentLogin() {
   }, [navigate]);
 
   /* ================= LOGIN ================= */
+  // Handle department login
   const handleLogin = async () => {
     if (!email || !password) {
       return toast.error(
@@ -47,9 +66,11 @@ export default function DepartmentLogin() {
         { email, password }
       );
 
+      // Save logged in department name
       localStorage.setItem("loggedInDepartment", res.data.deptName);
       toast.success(lang === "hi" ? "लॉगिन सफल!" : "Login successful!");
 
+      // Redirect after success
       setTimeout(() => {
         navigate("/department-complaints", { replace: true });
       }, 1200);
@@ -63,6 +84,7 @@ export default function DepartmentLogin() {
 
   return (
     <div style={pageWrapper} lang={lang}>
+      {/* Toast container */}
       <ToastContainer autoClose={2000} position="top-right" />
 
       {/* ================= SKIP LINK ================= */}
@@ -96,6 +118,7 @@ export default function DepartmentLogin() {
               {lang === "hi" ? "विभाग लॉगिन" : "Department Login"}
             </h1>
 
+            {/* Email input */}
             <label style={label}>
               {lang === "hi" ? "ईमेल" : "Email"}
             </label>
@@ -106,6 +129,7 @@ export default function DepartmentLogin() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
+            {/* Password input */}
             <label style={label}>
               {lang === "hi" ? "पासवर्ड" : "Password"}
             </label>
@@ -116,10 +140,12 @@ export default function DepartmentLogin() {
               onChange={(e) => setPassword(e.target.value)}
             />
 
+            {/* Login button */}
             <button style={loginBtn} onClick={handleLogin}>
               {lang === "hi" ? "लॉगिन करें" : "Login"}
             </button>
 
+            {/* Secondary actions */}
             <div style={linkGroup}>
               <button
                 style={secondaryBtn}
@@ -165,6 +191,7 @@ export default function DepartmentLogin() {
 
 /* ===================== STYLES ===================== */
 
+// Page wrapper style
 const pageWrapper = {
   minHeight: "100vh",
   display: "flex",
@@ -172,11 +199,13 @@ const pageWrapper = {
   backgroundColor: "#f4f6f9",
 };
 
+// Layout container
 const contentWrapper = {
   flex: 1,
   display: "flex",
 };
 
+// Skip link for accessibility
 const skipLink = {
   position: "absolute",
   top: "-40px",
@@ -187,6 +216,7 @@ const skipLink = {
   zIndex: 1000,
 };
 
+// Language toggle position
 const langToggle = {
   position: "absolute",
   top: "10px",
@@ -195,6 +225,7 @@ const langToggle = {
   gap: "6px",
 };
 
+// Language button style
 const langBtn = (active) => ({
   padding: "5px 9px",
   border: "1px solid #0056b3",
@@ -205,11 +236,13 @@ const langBtn = (active) => ({
   cursor: "pointer",
 });
 
+// Left image section
 const leftSection = {
   flex: 1,
   position: "relative",
 };
 
+// Background image
 const leftImage = {
   position: "absolute",
   inset: 0,
@@ -218,12 +251,14 @@ const leftImage = {
   backgroundPosition: "center",
 };
 
+// Overlay over image
 const overlay = {
   position: "absolute",
   inset: 0,
   backgroundColor: "rgba(0,0,0,0.25)",
 };
 
+// Right login section
 const rightSection = {
   flex: 1,
   display: "flex",
@@ -232,6 +267,7 @@ const rightSection = {
   backgroundColor: "#ffffff",
 };
 
+// Login card
 const loginBox = {
   width: "100%",
   maxWidth: 380,
@@ -241,32 +277,36 @@ const loginBox = {
   boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
 };
 
+// Title style
 const title = {
   textAlign: "center",
   marginBottom: 18,
-  fontSize: "1.1rem",   // 🔼 slightly bigger
+  fontSize: "1.1rem",
   fontWeight: 700,
   color: "#000",
 };
 
+// Label style
 const label = {
   marginBottom: 4,
   fontWeight: 500,
-  fontSize: "0.85rem",  // 🔼 slightly bigger
+  fontSize: "0.85rem",
   color: "#000",
 };
 
+// Input style
 const input = {
   width: "100%",
-  padding: 11,          // 🔼 slightly bigger
+  padding: 11,
   marginBottom: 14,
   borderRadius: 6,
   border: "1px solid #000",
-  fontSize: "0.95rem",  // 🔼 slightly bigger
+  fontSize: "0.95rem",
   fontWeight: 500,
   color: "#000",
 };
 
+// Login button style
 const loginBtn = {
   width: "100%",
   padding: 11,
@@ -279,6 +319,7 @@ const loginBtn = {
   cursor: "pointer",
 };
 
+// Button group
 const linkGroup = {
   display: "flex",
   flexDirection: "column",
@@ -286,6 +327,7 @@ const linkGroup = {
   marginTop: 14,
 };
 
+// Secondary button style
 const secondaryBtn = {
   padding: 9,
   backgroundColor: "#e9ecef",
@@ -297,6 +339,7 @@ const secondaryBtn = {
   cursor: "pointer",
 };
 
+// Footer style
 const footerStyle = {
   backgroundColor: "#ffffff",
   textAlign: "center",
@@ -305,6 +348,7 @@ const footerStyle = {
   color: "#000",
 };
 
+// Footer links
 const footerLinks = {
   listStyle: "none",
   padding: 0,

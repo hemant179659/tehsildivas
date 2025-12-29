@@ -1,8 +1,17 @@
+// React hooks: useState for state, useEffect for lifecycle, useRef for file inputs
 import { useEffect, useState, useRef } from "react";
+
+// React Router navigation hook
 import { useNavigate } from "react-router-dom";
+
+// Axios for API calls
 import axios from "axios";
+
+// Toast notifications
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+// Icons used in UI
 import {
   FaTachometerAlt,
   FaSignOutAlt,
@@ -12,20 +21,28 @@ import {
   FaFileAlt,
 } from "react-icons/fa";
 
+// Main component for department complaint action
 export default function DepartmentAction() {
   const navigate = useNavigate();
+
+  // Logged-in department name from localStorage
   const loggedDepartment = localStorage.getItem("loggedInDepartment");
 
-  const [complaints, setComplaints] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [remarks, setRemarks] = useState({});
-  const [actionLoading, setActionLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  // ================= STATE =================
+  const [complaints, setComplaints] = useState([]);       // Active complaints list
+  const [loading, setLoading] = useState(true);           // Initial loading state
+  const [remarks, setRemarks] = useState({});             // Remarks per complaint
+  const [actionLoading, setActionLoading] = useState(false); // Status update loading
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Responsive check
 
+  // Supporting documents selected per complaint
   const [supportDocs, setSupportDocs] = useState({});
+
+  // File input refs (per complaint) to reset input after submit
   const fileInputRefs = useRef({});
 
   /* ================= RESIZE ================= */
+  // Handle window resize for responsive layout
   useEffect(() => {
     const resize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", resize);
@@ -33,6 +50,7 @@ export default function DepartmentAction() {
   }, []);
 
   /* ================= PROTECT ROUTE ================= */
+  // Redirect to login if department is not logged in
   useEffect(() => {
     if (!loggedDepartment) {
       navigate("/dept-login", { replace: true });
@@ -40,6 +58,7 @@ export default function DepartmentAction() {
   }, [loggedDepartment, navigate]);
 
   /* ================= FETCH COMPLAINTS ================= */
+  // Fetch complaints assigned to the logged-in department
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
@@ -47,6 +66,7 @@ export default function DepartmentAction() {
           `${import.meta.env.VITE_API_URL}/department/department-complaints?department=${loggedDepartment}`
         );
 
+        // Filter only active (non-resolved) complaints
         const active = (res.data.complaints || []).filter(
           (c) => c.status !== "निस्तारित"
         );
@@ -63,6 +83,7 @@ export default function DepartmentAction() {
   }, [loggedDepartment]);
 
   /* ================= HELPERS ================= */
+  // Return color based on complaint status
   const statusColor = (status) => {
     if (status === "लंबित") return "#dc3545";
     if (status === "प्रक्रिया में") return "#ffc107";
@@ -70,12 +91,14 @@ export default function DepartmentAction() {
     return "#000";
   };
 
+  // Format date for display (India)
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     return new Date(dateStr).toLocaleDateString("en-IN");
   };
 
   /* ================= SUPPORT DOC HANDLERS ================= */
+  // Add selected supporting documents for a complaint
   const handleSupportDocs = (id, files) => {
     setSupportDocs((prev) => ({
       ...prev,
@@ -83,6 +106,7 @@ export default function DepartmentAction() {
     }));
   };
 
+  // Remove a selected supporting document
   const removeSupportDoc = (complaintId, index) => {
     setSupportDocs((prev) => {
       const files = [...(prev[complaintId] || [])];
@@ -92,8 +116,11 @@ export default function DepartmentAction() {
   };
 
   /* ================= UPDATE STATUS ================= */
+  // Update complaint status with remark and optional documents
   const updateStatus = async (complaintId, status) => {
     const remarkText = remarks[complaintId];
+
+    // Require remark before update
     if (!remarkText || !remarkText.trim()) {
       return toast.warning("कृपया टिप्पणी दर्ज करें");
     }
@@ -106,10 +133,12 @@ export default function DepartmentAction() {
       formData.append("remark", remarkText);
       formData.append("department", loggedDepartment);
 
+      // Attach supporting documents
       (supportDocs[complaintId] || []).forEach((file) => {
         formData.append("supportDocs", file);
       });
 
+      // API call to update complaint status
       await axios.put(
         `${import.meta.env.VITE_API_URL}/department/update-status/${complaintId}`,
         formData,
@@ -118,6 +147,7 @@ export default function DepartmentAction() {
 
       toast.success("स्थिति अपडेट हो गई");
 
+      // Update local state
       setComplaints((prev) =>
         prev.map((c) =>
           c.complaintId === complaintId
@@ -137,24 +167,28 @@ export default function DepartmentAction() {
         )
       );
 
+      // Remove resolved complaint from list
       if (status === "निस्तारित") {
         setComplaints((prev) =>
           prev.filter((c) => c.complaintId !== complaintId)
         );
       }
 
+      // Clear remark input
       setRemarks((prev) => {
         const copy = { ...prev };
         delete copy[complaintId];
         return copy;
       });
 
+      // Clear supporting documents
       setSupportDocs((prev) => {
         const copy = { ...prev };
         delete copy[complaintId];
         return copy;
       });
 
+      // Reset file input
       if (fileInputRefs.current[complaintId]) {
         fileInputRefs.current[complaintId].value = "";
       }
@@ -165,6 +199,7 @@ export default function DepartmentAction() {
     }
   };
 
+  // Logout department
   const handleLogout = () => {
     localStorage.removeItem("loggedInDepartment");
     navigate("/dept-login", { replace: true });
@@ -172,6 +207,7 @@ export default function DepartmentAction() {
 
   return (
     <>
+      {/* Toast notifications */}
       <ToastContainer autoClose={2000} />
 
       <div
@@ -223,13 +259,12 @@ export default function DepartmentAction() {
                       gap: 20,
                     }}
                   >
-                    {/* ================= LEFT ================= */}
+                    {/* LEFT SIDE */}
                     <div>
                       <p><b>शिकायत ID:</b> {c.complaintId}</p>
                       <p><b>नाम:</b> {c.complainantName}</p>
                       <p><b>मोबाइल:</b> {c.mobile}</p>
 
-                      {/* स्थिति */}
                       <p style={{ marginTop: 6 }}>
                         <b>स्थिति:</b>{" "}
                         <span style={{ fontWeight: 900, color: statusColor(c.status) }}>
@@ -237,10 +272,8 @@ export default function DepartmentAction() {
                         </span>
                       </p>
 
-                      {/* विवरण */}
                       <p><b>विवरण:</b> {c.complaintDetails}</p>
 
-                      {/* शिकायत के साथ संलग्न दस्तावेज़ */}
                       {c.documents?.length > 0 && (
                         <div style={{ marginTop: 6 }}>
                           <b>संलग्न दस्तावेज़:</b>
@@ -256,9 +289,9 @@ export default function DepartmentAction() {
                       )}
                     </div>
 
-                    {/* ================= RIGHT ================= */}
+                    {/* RIGHT SIDE */}
                     <div style={{ background: "#fff", padding: 12, borderRadius: 6 }}>
-                      <p><b>शिकायत सौंपे जाने वाला अधिकारी:</b> {c.assignedBy}</p>
+                      <p><b>शिकायत सौंपने वाला अधिकारी:</b> {c.assignedBy}</p>
                       <p><b>शिकायत सौंपा गया स्थान:</b> {c.assignedPlace}</p>
                       <p><b>शिकायत सौंपे जाने की तिथि:</b> {formatDate(c.assignedDate)}</p>
 
@@ -278,14 +311,13 @@ export default function DepartmentAction() {
                     </div>
                   </div>
 
-                  {/* नवीनतम टिप्पणी */}
                   {latestRemark && (
                     <p style={{ marginTop: 10 }}>
                       <b>नवीनतम टिप्पणी:</b> <i>{latestRemark}</i>
                     </p>
                   )}
 
-                  {/* टिप्पणी input */}
+                  {/* Remark input */}
                   <textarea
                     style={textarea}
                     placeholder="यहाँ टिप्पणी लिखें..."
@@ -298,7 +330,7 @@ export default function DepartmentAction() {
                     }
                   />
 
-                  {/* supporting docs upload */}
+                  {/* Supporting document upload */}
                   <input
                     type="file"
                     multiple
@@ -331,6 +363,7 @@ export default function DepartmentAction() {
                     </div>
                   )}
 
+                  {/* Action buttons */}
                   <div style={{ marginTop: 10 }}>
                     <button
                       style={btnYellow}
@@ -367,35 +400,41 @@ export default function DepartmentAction() {
 
 /* ================= STYLES (UNCHANGED) ================= */
 
+// Sidebar styles
 const sidebar = {
   background: "#002147",
   color: "#fff",
   padding: 20,
 };
 
+// Sidebar item
 const sideItem = {
   marginTop: 14,
   cursor: "pointer",
   fontWeight: 700,
 };
 
+// Main container
 const main = {
   flex: 1,
   background: "#fff",
   color: "#000",
 };
 
+// Page title
 const title = {
   textAlign: "center",
   fontWeight: 900,
   marginBottom: 20,
 };
 
+// Center text
 const centerText = {
   textAlign: "center",
   fontWeight: 700,
 };
 
+// Complaint card
 const card = {
   background: "#f8f9fa",
   padding: 20,
@@ -403,6 +442,7 @@ const card = {
   marginBottom: 20,
 };
 
+// Remark textarea
 const textarea = {
   width: "100%",
   padding: 10,
@@ -411,6 +451,7 @@ const textarea = {
   border: "1px solid #000",
 };
 
+// Yellow button
 const btnYellow = {
   marginRight: 10,
   padding: "8px 14px",
@@ -420,6 +461,7 @@ const btnYellow = {
   borderRadius: 5,
 };
 
+// Green button
 const btnGreen = {
   padding: "8px 14px",
   background: "#198754",
@@ -428,6 +470,7 @@ const btnGreen = {
   borderRadius: 5,
 };
 
+// Document row
 const docRow = {
   display: "flex",
   alignItems: "center",
@@ -435,11 +478,13 @@ const docRow = {
   marginTop: 4,
 };
 
+// Document link
 const docLink = {
   color: "#0d6efd",
   textDecoration: "underline",
 };
 
+// Footer
 const footerStyle = {
   position: "fixed",
   bottom: 0,

@@ -19,22 +19,21 @@ import  AdminPending from "./components/AdminPending.jsx";
 import  AdminInProgress from "./components/AdminInProgress.jsx";
 import  AdminCompleted from "./components/AdminCompleted.jsx";
 import  AdminOverall from "./components/AdminOverall.jsx";
-import AdminProjectList from "./components/AdminProjectList";
+
 import DepartmentStatus from "./components/DepartmentStatus";
-import Completed from "./components/Completed";
-import Pending from "./components/Pending";
-import ProjectPhotoAdmin from "./components/ProjectPhotoAdmin";
+
+
 
 /* ================= DEPARTMENT AUTH ================= */
 import DepartmentLogin from "./components/DepartmentLogin";
 import DepartmentSignup from "./components/DepartmentSignup";
 import DepartmentForgot from "./components/DepartmentForgot";
-import Verification from "./components/verification";
+
 import DeptResetPassword from "./components/DeptResetPassword";
 import ComplaintStatus from "./components/ComplaintStatus";
 
 /* ================= DEPARTMENT MAIN ================= */
-import DepartmentDashboard from "./components/DepartmentDashboard";
+
 import DepartmentAction from "./components/DepartmentAction";
 
 /* ================= DEPARTMENT SIDEBAR PAGES ================= */
@@ -44,9 +43,7 @@ import DeptResolved from "./components/DeptResolved";
 import DeptOverall from "./components/DeptOverall";
 
 /* ================= OTHER ================= */
-import ProjectList from "./components/ProjectList";
-import DailyReporting from "./components/DailyReporting";
-import ProjectRecentPhoto from "./components/ProjectRecentPhoto";
+
 
 export default function App() {
   return (
@@ -68,21 +65,17 @@ export default function App() {
         {/* ================= ADMIN ================= */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
          <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/admin-project-list" element={<AdminProjectList />} />
+       
         <Route path="/department-status" element={<DepartmentStatus />} />
-        <Route path="/completed" element={<Completed />} />
-        <Route path="/pending" element={<Pending />} />
+       
         <Route path="/admin/pending" element={<AdminPending />} />
-        <Route
-          path="/projectrecentphotoadmin"
-          element={<ProjectPhotoAdmin />}
-        />
+       
 
         {/* ================= DEPARTMENT AUTH ================= */}
         <Route path="/dept-login" element={<DepartmentLogin />} />
         <Route path="/dept-signup" element={<DepartmentSignup />} />
         <Route path="/dept-forgot" element={<DepartmentForgot />} />
-        <Route path="/dept-verify" element={<Verification />} />
+      
            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
   <Route path="/accessibility" element={<Accessibility />} />
         <Route
@@ -91,7 +84,7 @@ export default function App() {
         />
 
         {/* ================= DEPARTMENT DASHBOARD ================= */}
-        <Route path="/dept-dashboard" element={<DepartmentDashboard />} />
+
 
         {/* MAIN ACTION PAGE (remark + update) */}
         <Route
@@ -113,9 +106,7 @@ export default function App() {
 <Route path="/admin/overall" element={<AdminOverall />} />
 
         {/* ================= OTHER ================= */}
-        <Route path="/project-list" element={<ProjectList />} />
-        <Route path="/daily-reporting" element={<DailyReporting />} />
-        <Route path="/project-photos" element={<ProjectRecentPhoto />} />
+    
       </Routes>
     </Router>
   );

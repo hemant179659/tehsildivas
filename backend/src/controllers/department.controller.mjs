@@ -1,16 +1,33 @@
-import { Department, Complaint,Admin,Operator} from "../models/department.model.mjs";
+// ================= IMPORTS =================
+
+// Import Mongoose models for departments, complaints, admin users, and operators
+import { Department, Complaint, Admin, Operator } from "../models/department.model.mjs";
+
+// For hashing and comparing passwords securely
 import bcrypt from "bcryptjs";
+
+// For handling multipart/form-data (file uploads)
 import multer from "multer";
+
+// For loading environment variables from .env file
 import dotenv from "dotenv";
+
+// For generating secure random IDs (UUIDs)
 import crypto from "crypto";
+
+// AWS SDK clients for uploading and deleting files from S3
 import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
+
+// Load environment variables
 dotenv.config();
 
-/* ================= AWS ================= */
+/* ================= AWS CONFIG ================= */
+
+// Create AWS S3 client using credentials and region from environment variables
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -19,54 +36,80 @@ const s3 = new S3Client({
   },
 });
 
-/* ================= MULTER ================= */
+/* ================= MULTER CONFIG ================= */
+
+// Store uploaded files in memory (buffer) instead of disk
 const storage = multer.memoryStorage();
 
+// Middleware for uploading complaint documents (max 5 files, 5MB each)
 export const complaintDocumentUpload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).array("documents", 5);
 
+// Middleware for uploading supporting documents during status update (max 10 files)
 export const supportingDocUpload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).array("supportDocs", 10);
 
+/* ================= ADMIN LOGIN ================= */
 
+// Admin authentication controller
 export const adminLogin = async (req, res) => {
   try {
+    // Extract email and password from request body
     const { email, password } = req.body;
 
+    // Find admin by email
     const admin = await Admin.findOne({ email });
+
+    // If admin not found → invalid credentials
     if (!admin) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Compare entered password with hashed password in DB
     const match = await bcrypt.compare(password, admin.password);
+
+    // If password does not match
     if (!match) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Successful login
     res.json({ success: true });
   } catch (err) {
+    // Any server error
     res.status(500).json({ message: "Server error" });
   }
 };
+
+/* ================= OPERATOR LOGIN ================= */
+
+// Data entry operator login controller
 export const operatorLogin = async (req, res) => {
   try {
+    // Extract tehsil, email, and password
     const { tehsil, email, password } = req.body;
 
+    // Find operator by tehsil + email
     const operator = await Operator.findOne({ tehsil, email });
 
+    // If operator not found
     if (!operator) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Compare password
     const match = await bcrypt.compare(password, operator.password);
+
+    // If password mismatch
     if (!match) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Successful login response
     res.json({
       success: true,
       operatorName: operator.operatorName,
@@ -76,9 +119,13 @@ export const operatorLogin = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 /* ================= SEED ALL DEPARTMENTS ================= */
+
+// One-time seeding of all departments with verification codes
 export const seedDepartments = async (req, res) => {
   try {
+    // Static list of all departments with unique verification codes
     const departments = [
       { deptName: "जिला प्रशासन उधम सिंह नगर", verificationCode: "1905001" },
       { deptName: "जिलाधिकारी कार्यालय", verificationCode: "1905002" },
@@ -144,6 +191,7 @@ export const seedDepartments = async (req, res) => {
       { deptName: "पर्यावरण बोर्ड", verificationCode: "1905113" },
     ];
 
+    // Create bulk upsert operations to avoid duplicates
     const operations = departments.map((d) => ({
       updateOne: {
         filter: { deptName: d.deptName },
@@ -152,8 +200,10 @@ export const seedDepartments = async (req, res) => {
       },
     }));
 
+    // Execute bulk write
     const result = await Department.bulkWrite(operations);
 
+    // Send summary
     res.json({
       message: "Departments seeded successfully",
       inserted: result.upsertedCount,
@@ -165,20 +215,25 @@ export const seedDepartments = async (req, res) => {
   }
 };
 
+/* ================= DEPARTMENT AUTH ================= */
 
-/* ================= AUTH ================= */
+// Department signup with verification code
 export const departmentSignup = async (req, res) => {
   const { deptName, email, password, verificationCode } = req.body;
 
+  // Find department by name
   const dept = await Department.findOne({ deptName });
   if (!dept) return res.status(400).json({ message: "Department not found" });
 
+  // Verify department code
   if (dept.verificationCode !== verificationCode)
     return res.status(400).json({ message: "Invalid verification code" });
 
+  // Prevent double registration
   if (dept.isRegistered)
     return res.status(400).json({ message: "Already registered" });
 
+  // Save credentials
   dept.email = email;
   dept.password = await bcrypt.hash(password, 10);
   dept.isRegistered = true;
@@ -187,22 +242,32 @@ export const departmentSignup = async (req, res) => {
   res.json({ message: "Signup successful" });
 };
 
+// Department login
 export const departmentLogin = async (req, res) => {
   const { email, password } = req.body;
+
+  // Find department by email
   const dept = await Department.findOne({ email });
+
+  // Validate credentials
   if (!dept || !(await bcrypt.compare(password, dept.password))) {
     return res.status(400).json({ message: "Invalid credentials" });
   }
+
+  // Successful login
   res.json({ deptName: dept.deptName });
 };
 
-/* ================= COMPLAINT ================= */
+/* ================= COMPLAINT REGISTRATION ================= */
+
 export const registerComplaint = async (req, res) => {
   try {
     const docs = [];
 
+    // Upload each document to S3
     for (const file of req.files || []) {
       const key = `complaints/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
+
       await s3.send(
         new PutObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME,
@@ -212,18 +277,22 @@ export const registerComplaint = async (req, res) => {
         })
       );
 
+      // Store S3 reference in DB
       docs.push({
         key,
         url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
       });
     }
 
+    // Create complaint record
     const complaint = new Complaint({
       ...req.body,
       documents: docs,
     });
 
     await complaint.save();
+
+    // Return generated complaint ID
     res.json({ complaintId: complaint.complaintId });
   } catch (err) {
     console.error(err);
@@ -231,22 +300,30 @@ export const registerComplaint = async (req, res) => {
   }
 };
 
-/* ================= GET COMPLAINTS (FINAL FIX) ================= */
+/* ================= FETCH COMPLAINTS ================= */
+
 export const getComplaintsByDepartment = async (req, res) => {
   try {
     const { department, tehsil, all } = req.query;
 
     let filter = {};
 
+    // Admin view → all complaints
     if (all === "true") {
       filter = {};
-    } else if (department) {
+    }
+    // Department-specific complaints
+    else if (department) {
       filter = { department };
-    } else if (tehsil) {
+    }
+    // Tehsil-specific complaints
+    else if (tehsil) {
       filter = { tehsil };
     }
 
+    // Fetch complaints sorted by latest
     const complaints = await Complaint.find(filter).sort({ createdAt: -1 });
+
     res.json({ complaints });
   } catch (err) {
     console.error(err);
@@ -254,12 +331,14 @@ export const getComplaintsByDepartment = async (req, res) => {
   }
 };
 
-/* ================= UPDATE STATUS ================= */
+/* ================= UPDATE COMPLAINT STATUS ================= */
+
 export const updateComplaintStatus = async (req, res) => {
   try {
     const { complaintId } = req.params;
     const { status, remark, department } = req.body;
 
+    // Find complaint
     const complaint = await Complaint.findOne({ complaintId });
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -267,8 +346,10 @@ export const updateComplaintStatus = async (req, res) => {
 
     const supportDocs = [];
 
+    // Upload supporting documents
     for (const file of req.files || []) {
       const key = `complaint-supporting/${Date.now()}-${crypto.randomUUID()}-${file.originalname}`;
+
       await s3.send(
         new PutObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME,
@@ -285,13 +366,17 @@ export const updateComplaintStatus = async (req, res) => {
       });
     }
 
+    // Update complaint fields
     complaint.status = status;
     complaint.remarksHistory.push({ department, status, remark });
 
+    // Attach supporting documents
     if (supportDocs.length) {
       complaint.supportingDocuments.push(...supportDocs);
     }
-      if (status === "निस्तारित" || status === "Resolved") {
+
+    // If complaint resolved → delete original documents
+    if (status === "निस्तारित" || status === "Resolved") {
       for (const doc of complaint.documents) {
         await s3.send(
           new DeleteObjectCommand({
@@ -301,11 +386,12 @@ export const updateComplaintStatus = async (req, res) => {
         );
       }
 
-      // DB से भी original documents हटा दो
+      // Remove document references from DB
       complaint.documents = [];
     }
 
     await complaint.save();
+
     res.json({ message: "Status updated" });
   } catch (err) {
     console.error(err);
@@ -313,9 +399,11 @@ export const updateComplaintStatus = async (req, res) => {
   }
 };
 
-/* ================= PUBLIC TRACK ================= */
+/* ================= PUBLIC TRACKING ================= */
+
 export const getComplaintStatus = async (req, res) => {
   try {
+    // Find complaint by complaintId
     const complaint = await Complaint.findOne({
       complaintId: req.params.complaintId,
     });
@@ -324,6 +412,7 @@ export const getComplaintStatus = async (req, res) => {
       return res.status(404).json({ message: "Not found" });
     }
 
+    // Send full complaint details
     res.json({ complaint });
   } catch (err) {
     console.error(err);

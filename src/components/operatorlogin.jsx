@@ -1,19 +1,40 @@
+// React hooks for state and lifecycle handling
 import { useState, useEffect } from "react";
+
+// React Router hooks and components
 import { useNavigate, Link } from "react-router-dom";
+
+// Custom back button component
 import BackButton from "./BackButton";
+
+// Background image asset
 import backgroundImage from "../assets/login.jpg";
+
+// Axios for API calls
 import axios from "axios";
 
+// Data Entry Operator Login Component
 export default function DataEntryLogin() {
+  // Navigation hook
   const navigate = useNavigate();
 
+  // Selected tehsil
   const [tehsil, setTehsil] = useState("");
+
+  // Operator email
   const [email, setEmail] = useState("");
+
+  // Operator password
   const [password, setPassword] = useState("");
+
+  // Detect mobile screen size
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Language selection (Hindi / English)
   const [lang, setLang] = useState("hi");
 
   /* 🔹 ONLY FOR DROPDOWN (NO PASSWORD HERE) */
+  // Static tehsil list for dropdown selection
   const TEHSIL_LIST = [
     "Tehsil Rudrapur",
     "Tehsil Sitarganj",
@@ -24,40 +45,59 @@ export default function DataEntryLogin() {
     "Tehsil Bajpur",
   ];
 
+  // Handle screen resize for responsive UI
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
+
+    // Add resize listener
     window.addEventListener("resize", handleResize);
+
+    // Cleanup on component unmount
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   /* ================= LOGIN (DB BASED) ================= */
+  // Operator login handler
   const handleLogin = async () => {
+    // Basic client-side validation
     if (!tehsil || !email || !password) {
       alert(lang === "hi" ? "कृपया सभी जानकारी भरें" : "Please fill all details");
       return;
     }
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/department/operatorlogin`, {
-        tehsil,
-        email,
-        password,
-      });
+      // Send login request to backend
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/department/operatorlogin`,
+        {
+          tehsil,
+          email,
+          password,
+        }
+      );
 
+      // On successful login
       if (res.data?.success) {
+        // Store operator name for dashboard display
         localStorage.setItem("dataEntryOperator", res.data.operatorName);
+
+        // Store logged-in tehsil for session validation
         localStorage.setItem("loggedTehsil", res.data.tehsil);
 
+        // Redirect to operator dashboard
         navigate("/operator-dashboard", { replace: true });
       }
     } catch (err) {
+      // Login failure alert
       alert(lang === "hi" ? "गलत ईमेल या पासवर्ड" : "Invalid email or password");
     }
   };
 
   return (
+    // Page wrapper with language attribute for accessibility
     <div style={pageWrapper} lang={lang}>
       {/* ---------- LANGUAGE TOGGLE ---------- */}
+      {/* Toggle between Hindi and English */}
       <div style={langToggle}>
         <button onClick={() => setLang("hi")} style={langBtn(lang === "hi")}>
           हिंदी
@@ -69,22 +109,31 @@ export default function DataEntryLogin() {
 
       {/* ---------- MAIN CONTENT ---------- */}
       <div style={contentWrapper}>
+        {/* Left section shown only on desktop */}
         {!isMobile && (
           <aside style={leftSection} aria-hidden="true">
+            {/* Background image */}
             <div style={leftImage} />
+
+            {/* Dark overlay for contrast */}
             <div style={overlay} />
+
+            {/* Back navigation button */}
             <BackButton onClick={() => navigate("/")} />
           </aside>
         )}
 
+        {/* Login form section */}
         <main style={rightSection} role="main">
           <section style={loginBox}>
+            {/* Page title */}
             <h2 style={title}>
               {lang === "hi"
                 ? "डेटा एंट्री ऑपरेटर लॉगिन"
                 : "Data Entry Operator Login"}
             </h2>
 
+            {/* Tehsil dropdown */}
             <label style={label}>
               {lang === "hi" ? "तहसील चुनें" : "Select Tehsil"}
             </label>
@@ -96,6 +145,8 @@ export default function DataEntryLogin() {
               <option value="">
                 {lang === "hi" ? "-- तहसील चुनें --" : "-- Select Tehsil --"}
               </option>
+
+              {/* Render tehsil options */}
               {TEHSIL_LIST.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -103,6 +154,7 @@ export default function DataEntryLogin() {
               ))}
             </select>
 
+            {/* Email input */}
             <label style={label}>{lang === "hi" ? "ईमेल" : "Email"}</label>
             <input
               style={input}
@@ -111,6 +163,7 @@ export default function DataEntryLogin() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
+            {/* Password input */}
             <label style={label}>
               {lang === "hi" ? "पासवर्ड" : "Password"}
             </label>
@@ -121,6 +174,7 @@ export default function DataEntryLogin() {
               onChange={(e) => setPassword(e.target.value)}
             />
 
+            {/* Login button */}
             <button style={loginBtn} onClick={handleLogin}>
               {lang === "hi" ? "लॉगिन करें" : "Login"}
             </button>
@@ -129,6 +183,7 @@ export default function DataEntryLogin() {
       </div>
 
       {/* ---------- FOOTER ---------- */}
+      {/* Footer information */}
       <footer style={footerStyle} role="contentinfo">
         <p style={{ margin: 0, fontWeight: 700 }}>
           {lang === "hi"
@@ -139,6 +194,7 @@ export default function DataEntryLogin() {
           Designed & Developed by District Administration
         </p>
 
+        {/* Footer navigation links */}
         <nav aria-label="Footer Navigation">
           <ul style={footerLinks}>
             <li><Link to="/privacy-policy">Privacy Policy</Link></li>
@@ -154,6 +210,7 @@ export default function DataEntryLogin() {
 
 /* ===================== STYLES ===================== */
 
+// Page container
 const pageWrapper = {
   minHeight: "100vh",
   display: "flex",
@@ -161,11 +218,13 @@ const pageWrapper = {
   backgroundColor: "#f4f6f9",
 };
 
+// Layout wrapper
 const contentWrapper = {
   flex: 1,
   display: "flex",
 };
 
+// Language toggle container
 const langToggle = {
   position: "absolute",
   top: "10px",
@@ -175,6 +234,7 @@ const langToggle = {
   gap: "6px",
 };
 
+// Language toggle button
 const langBtn = (active) => ({
   padding: "6px 10px",
   border: "1px solid #0056b3",
@@ -185,11 +245,13 @@ const langBtn = (active) => ({
   fontSize: "0.8rem",
 });
 
+// Left image section
 const leftSection = {
   flex: 1,
   position: "relative",
 };
 
+// Background image styling
 const leftImage = {
   position: "absolute",
   inset: 0,
@@ -198,12 +260,14 @@ const leftImage = {
   backgroundPosition: "center",
 };
 
+// Overlay over background image
 const overlay = {
   position: "absolute",
   inset: 0,
   background: "rgba(0,0,0,0.25)",
 };
 
+// Right section for login form
 const rightSection = {
   flex: 1,
   display: "flex",
@@ -212,6 +276,7 @@ const rightSection = {
   backgroundColor: "#ffffff",
 };
 
+// Login form container
 const loginBox = {
   width: "100%",
   maxWidth: 360,
@@ -221,6 +286,7 @@ const loginBox = {
   boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
 };
 
+// Form title
 const title = {
   textAlign: "center",
   marginBottom: 16,
@@ -229,12 +295,14 @@ const title = {
   color: "#000",
 };
 
+// Input label
 const label = {
   fontWeight: 600,
   fontSize: "0.85rem",
   color: "#000",
 };
 
+// Input fields
 const input = {
   width: "100%",
   padding: 10,
@@ -243,6 +311,7 @@ const input = {
   color: "#000",
 };
 
+// Login button
 const loginBtn = {
   width: "100%",
   padding: 12,
@@ -253,6 +322,7 @@ const loginBtn = {
   cursor: "pointer",
 };
 
+// Footer styling
 const footerStyle = {
   backgroundColor: "#ffffff",
   textAlign: "center",
@@ -261,6 +331,7 @@ const footerStyle = {
   color: "#000",
 };
 
+// Footer link list
 const footerLinks = {
   listStyle: "none",
   padding: 0,

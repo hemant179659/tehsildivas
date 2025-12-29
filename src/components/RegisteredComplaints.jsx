@@ -1,8 +1,17 @@
+// React hooks for lifecycle and state
 import { useEffect, useState } from "react";
+
+// React Router hook for navigation
 import { useNavigate } from "react-router-dom";
+
+// Axios for API requests
 import axios from "axios";
+
+// Toast notifications for error / success messages
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+// Icons used in sidebar UI
 import {
   FaTachometerAlt,
   FaList,
@@ -10,6 +19,7 @@ import {
   FaUserCircle,
 } from "react-icons/fa";
 
+// Registered Complaints component (Operator Panel)
 export default function RegisteredComplaints() {
   const navigate = useNavigate();
 
@@ -18,10 +28,13 @@ export default function RegisteredComplaints() {
   const operatorName =
     localStorage.getItem("dataEntryOperator") || "Data Entry Operator";
 
+  // Complaints list state
   const [complaints, setComplaints] = useState([]);
+
+  // Loading indicator state
   const [loading, setLoading] = useState(true);
 
-  // 🚫 PROTECT ROUTE
+  // 🚫 PROTECT ROUTE (redirect if operator not logged in)
   useEffect(() => {
     if (!loggedTehsil) {
       navigate("/operator-login", { replace: true });
@@ -35,11 +48,15 @@ export default function RegisteredComplaints() {
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL}/department/department-complaints?tehsil=${loggedTehsil}`
 
+          
         );
+        // Store complaints received from backend
         setComplaints(res.data.complaints || []);
       } catch {
+        // Error toast if API fails
         toast.error("शिकायतें लोड करने में त्रुटि");
       } finally {
+        // Stop loading spinner
         setLoading(false);
       }
     };
@@ -54,7 +71,8 @@ export default function RegisteredComplaints() {
     navigate("/operator-login", { replace: true });
   };
 
-  // 📅 DATE + TIME (IST) — FIXED
+  // 📅 DATE + TIME (IST)
+  // Converts MongoDB date to readable Indian format
   const formatDateTime = (dateStr) => {
     if (!dateStr) return "-";
 
@@ -74,6 +92,7 @@ export default function RegisteredComplaints() {
 
   return (
     <>
+      {/* Toast notification container */}
       <ToastContainer autoClose={2000} />
 
       <div style={{ display: "flex", minHeight: "100vh", background: "#f4f7f6" }}>
@@ -86,12 +105,14 @@ export default function RegisteredComplaints() {
             padding: 20,
           }}
         >
+          {/* Operator information */}
           <div style={{ textAlign: "center", marginBottom: 25 }}>
             <FaUserCircle size={48} />
             <h3 style={{ fontWeight: 800 }}>{operatorName}</h3>
             <p style={{ fontSize: "0.8rem" }}>{loggedTehsil}</p>
           </div>
 
+          {/* Dashboard navigation */}
           <div
             onClick={() => navigate("/operator-dashboard")}
             style={{ cursor: "pointer", marginBottom: 12 }}
@@ -99,10 +120,12 @@ export default function RegisteredComplaints() {
             <FaTachometerAlt /> Dashboard
           </div>
 
+          {/* Current page indicator */}
           <div style={{ marginBottom: 12, fontWeight: 800 }}>
             <FaList /> Registered Complaints
           </div>
 
+          {/* Logout button */}
           <div onClick={handleLogout} style={{ cursor: "pointer" }}>
             <FaSignOutAlt /> Logout
           </div>
@@ -121,15 +144,18 @@ export default function RegisteredComplaints() {
             पंजीकृत शिकायतें
           </h1>
 
+          {/* Loading state */}
           {loading ? (
             <p style={{ textAlign: "center", fontWeight: 700 }}>
               डेटा लोड हो रहा है...
             </p>
           ) : complaints.length === 0 ? (
+            /* No complaints message */
             <p style={{ textAlign: "center", fontWeight: 700 }}>
               इस तहसील के लिए कोई शिकायत उपलब्ध नहीं है
             </p>
           ) : (
+            /* Complaints table */
             <div style={{ overflowX: "auto" }}>
               <table
                 style={{
@@ -161,7 +187,7 @@ export default function RegisteredComplaints() {
                       <td style={td}>{c.complainantName}</td>
                       <td style={td}>{c.mobile}</td>
                       <td style={td}>{c.department}</td>
-                      {/* ✅ USE createdAt ONLY */}
+                      {/* Created date & time */}
                       <td style={td}>{formatDateTime(c.createdAt)}</td>
                     </tr>
                   ))}
@@ -194,12 +220,15 @@ export default function RegisteredComplaints() {
 }
 
 // ================= TABLE STYLES =================
+
+// Table header cell style
 const th = {
   padding: "10px",
   border: "1px solid #ddd",
   textAlign: "left",
 };
 
+// Table data cell style
 const td = {
   padding: "10px",
   border: "1px solid #ddd",
